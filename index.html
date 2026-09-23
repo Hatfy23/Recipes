@@ -1,0 +1,1860 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Despensa & Receitas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1E2420;
+    --bg-2:#191E1B;
+    --surface:#262C27;
+    --surface-2:#2E352F;
+    --surface-hover:#343C35;
+    --border:#3B4339;
+    --text:#F0EDE4;
+    --text-dim:#A9B2A2;
+    --text-faint:#707A6E;
+    --accent:#C1793F;
+    --accent-dim:#8F5A30;
+    --sage:#829772;
+    --sage-dim:#5C6E53;
+    --danger:#C1443B;
+    --danger-dim:#3A2523;
+    --warning:#D4A24C;
+    --font-display:'Roboto Slab', serif;
+    --font-body:'Work Sans', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+    --radius:10px;
+    --radius-sm:6px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(193,121,63,0.06), transparent 40%),
+      radial-gradient(circle at 85% 100%, rgba(130,151,114,0.06), transparent 45%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-dim);color:var(--text);}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;}
+  a{color:var(--accent);}
+
+  /* ---------- HEADER ---------- */
+  header.topbar{
+    position:sticky;top:0;z-index:20;
+    background:linear-gradient(180deg, var(--bg-2) 0%, rgba(25,30,27,0.94) 100%);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--border);
+    padding:14px 20px 0 20px;
+  }
+  .topbar-inner{
+    max-width:1180px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand .mark{
+    width:34px;height:34px;border-radius:8px;
+    background:linear-gradient(135deg, var(--accent), var(--accent-dim));
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:700;color:#1E2420;font-size:16px;
+    flex-shrink:0;
+  }
+  .brand h1{
+    font-family:var(--font-display);font-size:19px;font-weight:600;margin:0;letter-spacing:0.2px;
+  }
+  .brand .sub{font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);letter-spacing:0.3px;}
+  .header-actions{display:flex;gap:8px;align-items:center;}
+  .sync-indicator{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);padding:0 4px;}
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text-faint);flex-shrink:0;transition:background .2s;}
+  .sync-dot.synced{background:var(--sage);}
+  .sync-dot.saving{background:var(--warning);animation:pulseDot 1s infinite;}
+  .sync-dot.offline{background:var(--danger);}
+  .sync-dot.loading{background:var(--text-faint);animation:pulseDot 1s infinite;}
+  @keyframes pulseDot{0%,100%{opacity:1;}50%{opacity:0.35;}}
+  .icon-btn{
+    background:var(--surface);border:1px solid var(--border);color:var(--text-dim);
+    border-radius:var(--radius-sm);padding:7px 11px;font-size:12.5px;display:flex;align-items:center;gap:6px;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .icon-btn:hover{background:var(--surface-hover);color:var(--text);border-color:var(--text-faint);}
+
+  .tabs{max-width:1180px;margin:14px auto 0 auto;display:flex;gap:4px;}
+  .tab-btn{
+    background:none;border:none;color:var(--text-faint);
+    padding:10px 4px;font-size:14.5px;font-weight:600;font-family:var(--font-display);
+    border-bottom:2px solid transparent;margin-right:22px;letter-spacing:0.2px;
+    transition:color .15s;
+  }
+  .tab-btn.active{color:var(--text);border-bottom-color:var(--accent);}
+  .tab-btn:hover{color:var(--text);}
+  .tab-badge{
+    display:inline-block;margin-left:6px;background:var(--danger-dim);color:#E7A199;
+    font-family:var(--font-mono);font-size:10.5px;padding:1px 6px;border-radius:20px;vertical-align:2px;
+  }
+
+  main{max-width:1180px;margin:0 auto;padding:22px 20px 80px 20px;}
+
+  /* ---------- TOOLBAR ---------- */
+  .toolbar{
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px;
+  }
+  .search-box{
+    flex:1;min-width:180px;position:relative;
+  }
+  .search-box input{
+    width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);
+    padding:9px 12px 9px 32px;border-radius:var(--radius-sm);font-size:13.5px;outline:none;
+  }
+  .search-box input:focus{border-color:var(--accent-dim);}
+  .search-box::before{
+    content:"⌕";position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-faint);font-size:15px;
+  }
+  select.filter-select{
+    background:var(--surface);border:1px solid var(--border);color:var(--text-dim);
+    padding:9px 10px;border-radius:var(--radius-sm);font-size:13px;outline:none;
+  }
+  .toggle-chip{
+    background:var(--surface);border:1px solid var(--border);color:var(--text-dim);
+    padding:8px 13px;border-radius:20px;font-size:12.5px;display:flex;align-items:center;gap:6px;
+    transition:all .15s;
+  }
+  .toggle-chip.active{background:var(--danger-dim);color:#E7A199;border-color:#5A302C;}
+  .btn-primary{
+    background:var(--accent);border:1px solid var(--accent);color:#1B211D;font-weight:700;
+    padding:9px 15px;border-radius:var(--radius-sm);font-size:13.5px;white-space:nowrap;
+    transition:filter .15s;
+  }
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-secondary{
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    padding:9px 15px;border-radius:var(--radius-sm);font-size:13.5px;
+  }
+  .btn-secondary:hover{background:var(--surface-hover);}
+  .btn-ghost{
+    background:none;border:1px solid var(--border);color:var(--text-dim);
+    padding:8px 13px;border-radius:var(--radius-sm);font-size:12.5px;
+  }
+  .btn-ghost:hover{color:var(--text);border-color:var(--text-faint);}
+  .btn-danger-ghost{
+    background:none;border:1px solid #4A2E2B;color:#D08A82;
+    padding:8px 13px;border-radius:var(--radius-sm);font-size:12.5px;
+  }
+  .btn-danger-ghost:hover{background:var(--danger-dim);}
+
+  /* ---------- GRID / CARDS ---------- */
+  .grid{
+    display:grid;grid-template-columns:repeat(auto-fill, minmax(230px,1fr));gap:14px;
+  }
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    overflow:hidden;display:flex;flex-direction:column;transition:border-color .15s, transform .15s;
+    position:relative;
+  }
+  .card:hover{border-color:var(--text-faint);}
+  .card-photo{
+    width:100%;height:120px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;
+    color:var(--text-faint);font-size:30px;overflow:hidden;
+  }
+  .card-photo img{width:100%;height:100%;object-fit:cover;}
+  .card-body{padding:11px 13px 13px 13px;display:flex;flex-direction:column;gap:7px;flex:1;}
+  .card-title-row{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+  .card-title{font-family:var(--font-display);font-size:14.5px;font-weight:600;line-height:1.25;}
+  .card-cat{font-size:10.5px;color:var(--text-faint);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.4px;}
+  .card-actions{display:flex;gap:4px;opacity:0;transition:opacity .15s;flex-shrink:0;}
+  .card:hover .card-actions{opacity:1;}
+  .mini-btn{
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim);
+    width:24px;height:24px;border-radius:6px;font-size:12px;display:flex;align-items:center;justify-content:center;
+  }
+  .mini-btn:hover{background:var(--surface-hover);color:var(--text);}
+
+  /* gauge */
+  .gauge-wrap{margin-top:2px;}
+  .gauge-track{
+    position:relative;height:8px;background:var(--surface-2);border-radius:6px;overflow:visible;border:1px solid var(--border);
+  }
+  .gauge-fill{position:absolute;top:0;left:0;height:100%;border-radius:6px;transition:width .2s;}
+  .gauge-min-tick{position:absolute;top:-2px;width:2px;height:12px;background:var(--text-faint);border-radius:1px;}
+  .gauge-labels{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10.5px;color:var(--text-faint);margin-top:4px;}
+  .status-pill{font-size:10px;font-family:var(--font-mono);padding:2px 7px;border-radius:20px;white-space:nowrap;}
+  .status-low{background:var(--danger-dim);color:#E7A199;}
+  .status-ok{background:#33402F;color:#B9CBA8;}
+  .status-full{background:#3E3323;color:var(--warning);}
+
+  .price-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-dim);}
+  .price-row .price{font-family:var(--font-mono);color:var(--text);font-weight:500;}
+
+  /* recipe readiness badge */
+  .ready-badge{font-size:10.5px;font-family:var(--font-mono);padding:3px 8px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;}
+  .ready-yes{background:#2E3B29;color:#A6CB8E;}
+  .ready-no{background:var(--danger-dim);color:#E7A199;}
+  .ready-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+  .empty-state{
+    text-align:center;padding:60px 20px;color:var(--text-faint);
+  }
+  .empty-state .glyph{font-size:34px;margin-bottom:10px;}
+  .empty-state h3{font-family:var(--font-display);color:var(--text-dim);font-weight:600;margin:0 0 6px 0;}
+  .empty-state p{font-size:13px;max-width:340px;margin:0 auto;}
+
+  /* ---------- MODAL ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(10,12,10,0.65);backdrop-filter:blur(2px);
+    display:flex;align-items:flex-start;justify-content:center;padding:36px 16px;overflow-y:auto;z-index:100;
+  }
+  .modal{
+    background:var(--bg-2);border:1px solid var(--border);border-radius:14px;
+    width:100%;max-width:560px;padding:0;animation:modalIn .16s ease-out;
+  }
+  @keyframes modalIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .modal-header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:18px 22px;border-bottom:1px solid var(--border);
+  }
+  .modal-header h2{font-family:var(--font-display);font-size:17px;margin:0;font-weight:600;}
+  .modal-close{background:none;border:none;color:var(--text-faint);font-size:20px;line-height:1;padding:4px;}
+  .modal-close:hover{color:var(--text);}
+  .modal-body{padding:20px 22px;max-height:72vh;overflow-y:auto;}
+  .modal-footer{
+    padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;
+  }
+
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:5px;font-weight:600;letter-spacing:0.2px;}
+  .field .hint{font-size:11px;color:var(--text-faint);margin-top:4px;}
+  .field input[type=text], .field input[type=number], .field input[type=url], .field select, .field textarea{
+    width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);
+    padding:9px 11px;border-radius:var(--radius-sm);font-size:13.5px;outline:none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--accent-dim);}
+  .field textarea{resize:vertical;min-height:70px;line-height:1.5;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  fieldset{border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px 6px 14px;margin:0 0 14px 0;}
+  legend{font-size:11.5px;color:var(--text-faint);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.4px;padding:0 6px;}
+
+  .photo-upload{
+    display:flex;align-items:center;gap:12px;
+  }
+  .photo-upload input[type=url]{
+    flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);
+    padding:9px 11px;border-radius:var(--radius-sm);font-size:13px;outline:none;
+  }
+  .photo-upload input[type=url]:focus{border-color:var(--accent-dim);}
+  .photo-preview{
+    width:76px;height:76px;border-radius:10px;background:var(--surface);border:1px dashed var(--border);
+    display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:22px;overflow:hidden;flex-shrink:0;
+  }
+  .photo-preview img{width:100%;height:100%;object-fit:cover;}
+
+  /* ingredient row inside recipe form */
+  .ing-row{
+    display:grid;grid-template-columns:1fr 90px 30px;gap:8px;align-items:center;margin-bottom:8px;
+  }
+  .ing-row select, .ing-row input{
+    background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);
+    padding:8px 9px;font-size:13px;
+  }
+  .remove-row-btn{
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text-faint);
+    width:30px;height:32px;border-radius:6px;font-size:15px;
+  }
+  .remove-row-btn:hover{color:#E7A199;border-color:#4A2E2B;}
+
+  /* ---------- RECIPE DETAIL ---------- */
+  .detail-photo{width:100%;height:190px;border-radius:10px;background:var(--surface);overflow:hidden;margin-bottom:16px;display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:36px;}
+  .detail-photo img{width:100%;height:100%;object-fit:cover;}
+  .banner{
+    padding:11px 14px;border-radius:var(--radius-sm);font-size:13px;display:flex;align-items:center;gap:10px;margin-bottom:16px;font-weight:500;
+  }
+  .banner.good{background:#26301F;color:#B9CBA8;border:1px solid #3A4A2F;}
+  .banner.bad{background:var(--danger-dim);color:#E7A199;border:1px solid #4A2E2B;}
+  .servings-control{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .step-btn{
+    width:28px;height:28px;border-radius:7px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:16px;
+  }
+  .step-btn:hover{background:var(--surface-hover);}
+  .servings-val{font-family:var(--font-mono);font-size:14px;min-width:70px;text-align:center;}
+
+  .ingredient-check-list{list-style:none;padding:0;margin:0 0 16px 0;}
+  .ingredient-check-list li{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:9px 0;border-bottom:1px solid var(--border);font-size:13.5px;
+  }
+  .ingredient-check-list li:last-child{border-bottom:none;}
+  .ic-name{display:flex;align-items:center;gap:9px;}
+  .ic-mark{width:17px;height:17px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+  .ic-mark.yes{background:#2E3B29;color:#A6CB8E;}
+  .ic-mark.no{background:var(--danger-dim);color:#E7A199;}
+  .ic-qty{font-family:var(--font-mono);color:var(--text-dim);font-size:12.5px;}
+  .ic-missing{color:#E7A199;font-size:11px;font-family:var(--font-mono);}
+
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+  .stat-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center;}
+  .stat-box .val{font-family:var(--font-mono);font-size:15px;font-weight:600;color:var(--text);}
+  .stat-box .lbl{font-size:9.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.4px;margin-top:2px;}
+
+  .link-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .link-btn{
+    display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);
+    color:var(--text);padding:8px 12px;border-radius:var(--radius-sm);font-size:12.5px;text-decoration:none;
+  }
+  .link-btn:hover{background:var(--surface-hover);}
+
+  .instructions-block{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+    padding:14px;font-size:13.5px;line-height:1.65;white-space:pre-wrap;color:var(--text-dim);margin-bottom:16px;
+  }
+
+  .detail-footer-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+
+  /* ---------- CART ---------- */
+  .cart-section-title{
+    font-family:var(--font-display);font-size:14.5px;font-weight:600;margin:22px 0 10px 0;
+    display:flex;align-items:center;gap:8px;
+  }
+  .cart-section-title:first-child{margin-top:0;}
+  .cart-section-title .count{
+    font-family:var(--font-mono);font-size:11px;color:var(--text-faint);font-weight:400;
+    background:var(--surface);border:1px solid var(--border);padding:1px 8px;border-radius:20px;
+  }
+  .suggestion-list, .cart-list{list-style:none;padding:0;margin:0;}
+  .suggestion-row, .cart-row{
+    display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;
+  }
+  .cart-row.checked{opacity:0.55;}
+  .cart-row-thumb, .suggestion-row-thumb{
+    width:34px;height:34px;border-radius:7px;background:var(--surface-2);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:15px;color:var(--text-faint);
+  }
+  .cart-row-thumb img, .suggestion-row-thumb img{width:100%;height:100%;object-fit:cover;}
+  .row-main{flex:1;min-width:0;}
+  .row-name{font-size:13.5px;font-weight:500;}
+  .row-sub{font-size:11px;color:var(--text-faint);font-family:var(--font-mono);margin-top:2px;}
+  .type-tag{
+    font-size:9.5px;font-family:var(--font-mono);padding:2px 6px;border-radius:20px;text-transform:uppercase;letter-spacing:0.3px;
+    background:var(--surface-2);color:var(--text-faint);border:1px solid var(--border);
+  }
+  .cart-qty-input{
+    width:64px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    padding:6px 8px;border-radius:6px;font-size:12.5px;font-family:var(--font-mono);text-align:center;
+  }
+  .cart-check{width:18px;height:18px;accent-color:var(--sage);flex-shrink:0;cursor:pointer;}
+  .cart-footer-bar{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+    margin-top:16px;padding-top:16px;border-top:1px solid var(--border);
+  }
+  .cart-total-block{display:flex;flex-direction:column;gap:2px;}
+  .cart-total-line{font-size:13px;color:var(--text-dim);}
+  .cart-total-line strong{color:var(--text);font-family:var(--font-mono);font-weight:600;}
+  .cart-total-line.sub{font-size:11.5px;color:var(--text-faint);}
+  .cart-row-cost{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);min-width:56px;text-align:right;}
+  .history-qty{font-family:var(--font-mono);font-size:13px;color:var(--text);font-weight:500;}
+
+  /* ---------- CONSUMABLE STEPPER ---------- */
+  .consumable-tag{
+    font-size:9.5px;font-family:var(--font-mono);padding:1px 6px;border-radius:20px;text-transform:uppercase;
+    letter-spacing:0.3px;background:var(--accent-dim);color:#F0D9BF;display:inline-block;margin-top:2px;
+  }
+  .stepper-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:2px;}
+  .step-btn-sm{
+    width:24px;height:24px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);
+    color:var(--text);font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;
+  }
+  .step-btn-sm:hover{background:var(--surface-hover);}
+  .stepper-row .stepper-label{font-size:10.5px;color:var(--text-faint);font-family:var(--font-mono);}
+  .checkbox-field{display:flex;align-items:center;gap:8px;}
+  .checkbox-field input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+  .checkbox-field label{margin:0;font-size:12.5px;color:var(--text);font-weight:500;cursor:pointer;}
+
+  /* ---------- DASHBOARD STRIP ---------- */
+  .dash-strip{
+    display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;
+  }
+  .dash-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+    padding:12px 16px;flex:1;min-width:150px;
+  }
+  .dash-card .num{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--text);}
+  .dash-card .lbl{font-size:11px;color:var(--text-faint);margin-top:2px;}
+  .dash-card.warn .num{color:var(--warning);}
+  .dash-card.danger .num{color:#E7A199;}
+
+  /* ---------- TOAST ---------- */
+  #toast-holder{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px;}
+  .toast{
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    padding:11px 16px;border-radius:var(--radius-sm);font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,0.3);
+    animation:toastIn .18s ease-out; max-width:280px;
+  }
+  .toast.error{border-color:#4A2E2B;color:#E7A199;}
+  .toast.success{border-color:#3A4A2F;color:#B9CBA8;}
+  @keyframes toastIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  @media (max-width:640px){
+    .field-row, .field-row-3{grid-template-columns:1fr;}
+    .stat-row{grid-template-columns:repeat(2,1fr);}
+    .dash-strip{flex-direction:column;}
+  }
+  .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="mark">D</div>
+      <div>
+        <h1>Despensa & Receitas</h1>
+        <div class="sub">gerenciador de ingredientes</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="sync-indicator" id="sync-indicator"><span class="sync-dot loading" id="sync-dot"></span><span id="sync-text">Carregando...</span></div>
+      <button class="icon-btn" id="btn-sync-now" title="Sincronizar agora">⟳</button>
+      <button class="icon-btn" id="btn-export" title="Exportar dados">⭳ Exportar</button>
+      <button class="icon-btn" id="btn-import" title="Importar dados">⭱ Importar</button>
+      <input type="file" id="import-file-input" accept="application/json" class="visually-hidden">
+    </div>
+  </div>
+  <div class="tabs topbar-inner" style="margin-top:14px;padding-bottom:0;">
+    <button class="tab-btn active" data-tab="ingredients" id="tab-btn-ingredients">Ingredientes</button>
+    <button class="tab-btn" data-tab="despensa" id="tab-btn-despensa">Despensa</button>
+    <button class="tab-btn" data-tab="recipes" id="tab-btn-recipes">Receitas</button>
+    <button class="tab-btn" data-tab="cart" id="tab-btn-cart">Carrinho de Compras</button>
+  </div>
+</header>
+
+<main>
+  <div id="view-ingredients"></div>
+  <div id="view-despensa" style="display:none;"></div>
+  <div id="view-recipes" style="display:none;"></div>
+  <div id="view-cart" style="display:none;"></div>
+</main>
+
+<div id="modal-root"></div>
+<div id="toast-holder"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   SUPABASE (cloud sync)
+   Nova tabela isolada: não toca em nenhuma outra tabela do projeto.
+============================================================ */
+const SUPABASE_URL = 'https://cfdzwduajsatbydphrtq.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ddMVcKindWWg_YeEokcUuA_IAeG9GcT';
+const SB_TABLE = 'despensa_receitas_store';
+const SB_ROW_ID = 'default';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let pushTimer = null;
+let syncInFlight = false;
+
+function setSyncStatus(status){
+  const dot = document.getElementById('sync-dot');
+  const text = document.getElementById('sync-text');
+  if(!dot || !text) return;
+  dot.className = 'sync-dot ' + status;
+  const labels = { loading:'Carregando...', synced:'Sincronizado', saving:'Salvando...', offline:'Sem conexão · salvo localmente' };
+  text.textContent = labels[status] || '';
+}
+
+async function syncFromCloud(showToast){
+  setSyncStatus('loading');
+  try{
+    const { data, error } = await sb.from(SB_TABLE).select('data').eq('id', SB_ROW_ID).maybeSingle();
+    if(error) throw error;
+    if(data && data.data){
+      state.ingredients = data.data.ingredients || [];
+      state.recipes = data.data.recipes || [];
+      state.despensaItems = data.data.despensaItems || [];
+      state.cart = data.data.cart || [];
+      state.purchaseLog = data.data.purchaseLog || {};
+      persistLocal();
+      renderAll();
+      setSyncStatus('synced');
+      if(showToast) toast('Dados atualizados da nuvem', 'success');
+    } else {
+      await pushToCloud();
+      if(showToast) toast('Nenhum dado na nuvem ainda — enviando dados locais', 'success');
+    }
+  }catch(err){
+    console.error('Falha ao buscar dados da nuvem', err);
+    setSyncStatus('offline');
+    if(showToast) toast('Sem conexão com a nuvem no momento', 'error');
+  }
+}
+
+async function pushToCloud(){
+  setSyncStatus('saving');
+  syncInFlight = true;
+  try{
+    const { error } = await sb.from(SB_TABLE).upsert({
+      id: SB_ROW_ID,
+      data: { ingredients: state.ingredients, recipes: state.recipes, despensaItems: state.despensaItems, cart: state.cart, purchaseLog: state.purchaseLog },
+      updated_at: new Date().toISOString()
+    });
+    if(error) throw error;
+    setSyncStatus('synced');
+  }catch(err){
+    console.error('Falha ao salvar na nuvem', err);
+    setSyncStatus('offline');
+  } finally {
+    syncInFlight = false;
+  }
+}
+
+function schedulePush(){
+  setSyncStatus('saving');
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(pushToCloud, 700);
+}
+
+/* ============================================================
+   STATE & STORAGE
+============================================================ */
+const STORAGE_KEYS = { ing: 'despensa_ingredients_v1', rec: 'despensa_recipes_v1', desp: 'despensa_household_v1', cart: 'despensa_cart_v1', hist: 'despensa_purchase_log_v1' };
+const UNIT_LABEL = { g: 'g', ml: 'ml', un: 'un' };
+const CATEGORY_SUGGESTIONS = ['Grãos e Cereais','Laticínios','Carnes e Ovos','Vegetais','Frutas','Temperos e Molhos','Bebidas','Enlatados','Congelados','Padaria','Outros'];
+const DESPENSA_UNIT_SUGGESTIONS = ['un','rolo','tubo','pacote','frasco','caixa','barra','litro','kg'];
+const DESPENSA_CATEGORY_SUGGESTIONS = ['Higiene Pessoal','Limpeza','Banheiro','Cozinha (não alimento)','Papelaria','Pet','Outros'];
+const MONTH_NAMES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+let state = { ingredients: [], recipes: [], despensaItems: [], cart: [], purchaseLog: {} };
+let currentTab = 'ingredients';
+let ingSearch = '';
+let ingCategoryFilter = '';
+let ingLowStockOnly = false;
+let recSearch = '';
+let recReadyOnly = false;
+let despSearch = '';
+let despCategoryFilter = '';
+let despLowStockOnly = false;
+let historySelectedMonth = null;
+
+function loadLocalState(){
+  try{
+    const rawIng = localStorage.getItem(STORAGE_KEYS.ing);
+    const rawRec = localStorage.getItem(STORAGE_KEYS.rec);
+    const rawDesp = localStorage.getItem(STORAGE_KEYS.desp);
+    const rawCart = localStorage.getItem(STORAGE_KEYS.cart);
+    const rawHist = localStorage.getItem(STORAGE_KEYS.hist);
+    state.ingredients = rawIng ? JSON.parse(rawIng) : [];
+    state.recipes = rawRec ? JSON.parse(rawRec) : [];
+    state.despensaItems = rawDesp ? JSON.parse(rawDesp) : [];
+    state.cart = rawCart ? JSON.parse(rawCart) : [];
+    state.purchaseLog = rawHist ? JSON.parse(rawHist) : {};
+  }catch(e){
+    console.error('Falha ao carregar dados salvos localmente', e);
+    state = { ingredients: [], recipes: [], despensaItems: [], cart: [], purchaseLog: {} };
+  }
+}
+function persistLocal(){
+  localStorage.setItem(STORAGE_KEYS.ing, JSON.stringify(state.ingredients));
+  localStorage.setItem(STORAGE_KEYS.rec, JSON.stringify(state.recipes));
+  localStorage.setItem(STORAGE_KEYS.desp, JSON.stringify(state.despensaItems));
+  localStorage.setItem(STORAGE_KEYS.cart, JSON.stringify(state.cart));
+  localStorage.setItem(STORAGE_KEYS.hist, JSON.stringify(state.purchaseLog));
+}
+function saveIngredients(){ persistLocal(); schedulePush(); }
+function saveRecipes(){ persistLocal(); schedulePush(); }
+function saveDespensa(){ persistLocal(); schedulePush(); }
+function saveCart(){ persistLocal(); schedulePush(); }
+function saveHistory(){ persistLocal(); schedulePush(); }
+
+function monthKeyNow(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function monthLabel(key){
+  const [y,m] = key.split('-');
+  return `${MONTH_NAMES_PT[parseInt(m,10)-1]} de ${y}`;
+}
+function logPurchase(refType, refId, name, unit, qty){
+  const key = monthKeyNow();
+  if(!state.purchaseLog[key]) state.purchaseLog[key] = {};
+  const itemKey = refType + ':' + refId;
+  const bucket = state.purchaseLog[key];
+  if(!bucket[itemKey]) bucket[itemKey] = { name, unit, qty: 0 };
+  bucket[itemKey].name = name;
+  bucket[itemKey].unit = unit;
+  bucket[itemKey].qty = Math.round((bucket[itemKey].qty + qty) * 100) / 100;
+}
+
+function uid(){
+  if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+}
+
+/* ============================================================
+   HELPERS
+============================================================ */
+function fmtNum(n){
+  if(n === null || n === undefined || isNaN(n)) return '0';
+  const r = Math.round(n*100)/100;
+  return r.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+}
+function fmtCurrency(n){
+  if(n === null || n === undefined || isNaN(n)) n = 0;
+  return n.toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+}
+function escapeHtml(str){
+  if(str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function unitLabel(u){ return UNIT_LABEL[u] || u; }
+
+function toast(msg, type){
+  const holder = document.getElementById('toast-holder');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  holder.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(), 300); }, 2600);
+}
+
+/* nutrition & price basis helpers
+   ingredient.nutrition = { calories, protein, carbs, fat } => values per 100 (g/ml) or per unit (un)
+   ingredient.price, ingredient.priceQty => price refers to priceQty units of ingredient.unit
+*/
+function pricePerBaseUnit(ing){
+  if(!ing.price || !ing.priceQty) return 0;
+  return ing.price / ing.priceQty;
+}
+function costForQuantity(ing, qty){
+  return pricePerBaseUnit(ing) * qty;
+}
+function nutritionForQuantity(ing, qty){
+  const n = ing.nutrition || {};
+  const factor = ing.unit === 'un' ? qty : (qty/100);
+  return {
+    calories: (n.calories||0) * factor,
+    protein: (n.protein||0) * factor,
+    carbs: (n.carbs||0) * factor,
+    fat: (n.fat||0) * factor
+  };
+}
+
+function stockStatus(ing){
+  if(ing.stockCurrent < ing.stockMin) return 'low';
+  if(ing.stockMax && ing.stockCurrent >= ing.stockMax) return 'full';
+  return 'ok';
+}
+
+function computeReadiness(recipe, servingsOverride){
+  const factor = servingsOverride ? (servingsOverride / (recipe.servings || 1)) : 1;
+  let readyCount = 0;
+  const rows = (recipe.ingredients||[]).map(ri => {
+    const ing = state.ingredients.find(i => i.id === ri.ingredientId);
+    const needed = (ri.quantity||0) * factor;
+    if(!ing){
+      return { ri, ing:null, needed, have:0, ok:false, missing:needed };
+    }
+    const ok = ing.stockCurrent >= needed;
+    if(ok) readyCount++;
+    return { ri, ing, needed, have: ing.stockCurrent, ok, missing: Math.max(0, needed - ing.stockCurrent) };
+  });
+  return { rows, ready: rows.every(r=>r.ok) && rows.length>0, readyCount, total: rows.length };
+}
+
+/* ============================================================
+   MODAL HELPERS
+============================================================ */
+function openModal(html, onMount){
+  const root = document.getElementById('modal-root');
+  root.innerHTML = `<div class="overlay" id="active-overlay"><div class="modal">${html}</div></div>`;
+  const overlay = document.getElementById('active-overlay');
+  overlay.addEventListener('mousedown', (e) => { if(e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', escCloseHandler);
+  if(onMount) onMount();
+}
+function closeModal(){
+  document.getElementById('modal-root').innerHTML = '';
+  document.removeEventListener('keydown', escCloseHandler);
+}
+function escCloseHandler(e){ if(e.key === 'Escape') closeModal(); }
+
+/* ============================================================
+   TABS
+============================================================ */
+function switchTab(tab){
+  currentTab = tab;
+  document.getElementById('tab-btn-ingredients').classList.toggle('active', tab==='ingredients');
+  document.getElementById('tab-btn-despensa').classList.toggle('active', tab==='despensa');
+  document.getElementById('tab-btn-recipes').classList.toggle('active', tab==='recipes');
+  document.getElementById('tab-btn-cart').classList.toggle('active', tab==='cart');
+  document.getElementById('view-ingredients').style.display = tab==='ingredients' ? 'block' : 'none';
+  document.getElementById('view-despensa').style.display = tab==='despensa' ? 'block' : 'none';
+  document.getElementById('view-recipes').style.display = tab==='recipes' ? 'block' : 'none';
+  document.getElementById('view-cart').style.display = tab==='cart' ? 'block' : 'none';
+  renderAll();
+}
+
+/* ============================================================
+   RENDER: INGREDIENTS VIEW
+============================================================ */
+function renderIngredientsView(){
+  const container = document.getElementById('view-ingredients');
+  const lowCount = state.ingredients.filter(i => stockStatus(i)==='low').length;
+
+  let filtered = state.ingredients.filter(i => {
+    if(ingSearch && !i.name.toLowerCase().includes(ingSearch.toLowerCase())) return false;
+    if(ingCategoryFilter && i.category !== ingCategoryFilter) return false;
+    if(ingLowStockOnly && stockStatus(i) !== 'low') return false;
+    return true;
+  }).sort((a,b)=> a.name.localeCompare(b.name, 'pt-BR'));
+
+  const categories = Array.from(new Set(state.ingredients.map(i=>i.category).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+
+  let dashHtml = '';
+  if(state.ingredients.length){
+    dashHtml = `
+    <div class="dash-strip">
+      <div class="dash-card"><div class="num">${state.ingredients.length}</div><div class="lbl">Ingredientes cadastrados</div></div>
+      <div class="dash-card ${lowCount>0?'danger':''}"><div class="num">${lowCount}</div><div class="lbl">Abaixo do estoque mínimo</div></div>
+      <div class="dash-card"><div class="num">${fmtCurrency(state.ingredients.reduce((s,i)=>s+costForQuantity(i,i.stockCurrent),0))}</div><div class="lbl">Valor estimado em estoque</div></div>
+    </div>`;
+  }
+
+  let cardsHtml;
+  if(!state.ingredients.length){
+    cardsHtml = `<div class="empty-state"><div class="glyph">🧺</div><h3>Sua despensa está vazia</h3><p>Cadastre seu primeiro ingrediente com preço, informações nutricionais e estoque.</p></div>`;
+  } else if(!filtered.length){
+    cardsHtml = `<div class="empty-state"><div class="glyph">🔍</div><h3>Nada encontrado</h3><p>Ajuste a busca ou os filtros.</p></div>`;
+  } else {
+    cardsHtml = `<div class="grid">` + filtered.map(renderIngredientCard).join('') + `</div>`;
+  }
+
+  container.innerHTML = `
+    ${dashHtml}
+    <div class="toolbar">
+      <div class="search-box"><input type="text" id="ing-search-input" placeholder="Buscar ingrediente..." value="${escapeHtml(ingSearch)}"></div>
+      <select class="filter-select" id="ing-category-filter">
+        <option value="">Todas categorias</option>
+        ${categories.map(c=>`<option value="${escapeHtml(c)}" ${c===ingCategoryFilter?'selected':''}>${escapeHtml(c)}</option>`).join('')}
+      </select>
+      <button class="toggle-chip ${ingLowStockOnly?'active':''}" id="ing-lowstock-toggle">⚠ Estoque baixo</button>
+      <button class="btn-primary" id="btn-add-ingredient">+ Novo ingrediente</button>
+    </div>
+    ${cardsHtml}
+  `;
+
+  document.getElementById('ing-search-input').oninput = (e)=>{ ingSearch = e.target.value; renderIngredientsView(); };
+  document.getElementById('ing-category-filter').onchange = (e)=>{ ingCategoryFilter = e.target.value; renderIngredientsView(); };
+  document.getElementById('ing-lowstock-toggle').onclick = ()=>{ ingLowStockOnly = !ingLowStockOnly; renderIngredientsView(); };
+  document.getElementById('btn-add-ingredient').onclick = ()=> openIngredientForm();
+
+  container.querySelectorAll('[data-edit-ing]').forEach(btn=>{
+    btn.onclick = (e)=>{ e.stopPropagation(); openIngredientForm(btn.dataset.editIng); };
+  });
+  container.querySelectorAll('[data-delete-ing]').forEach(btn=>{
+    btn.onclick = (e)=>{ e.stopPropagation(); deleteIngredient(btn.dataset.deleteIng); };
+  });
+  container.querySelectorAll('[data-cart-add-ing]').forEach(btn=>{
+    btn.onclick = (e)=>{ e.stopPropagation(); addToCartManual('ingredient', btn.dataset.cartAddIng); };
+  });
+  container.querySelectorAll('[data-consume-inc]').forEach(btn=>{
+    btn.onclick = (e)=>{ e.stopPropagation(); adjustConsumableStock('ingredient', btn.dataset.consumeInc, 1); };
+  });
+  container.querySelectorAll('[data-consume-dec]').forEach(btn=>{
+    btn.onclick = (e)=>{ e.stopPropagation(); adjustConsumableStock('ingredient', btn.dataset.consumeDec, -1); };
+  });
+}
+
+function renderIngredientCard(ing){
+  const status = stockStatus(ing);
+  const displayMax = Math.max(ing.stockMax||0, ing.stockCurrent||0, 1);
+  const fillPct = Math.min(100, (ing.stockCurrent/displayMax)*100);
+  const minPct = Math.min(100, (ing.stockMin/displayMax)*100);
+  const fillColor = status==='low' ? 'var(--danger)' : (status==='full' ? 'var(--warning)' : 'var(--sage)');
+  const statusPillHtml = status==='low' ? `<span class="status-pill status-low">baixo</span>` : (status==='full' ? `<span class="status-pill status-full">cheio</span>` : `<span class="status-pill status-ok">ok</span>`);
+
+  return `
+  <div class="card">
+    <div class="card-photo">${ing.photo ? `<img src="${ing.photo}" alt="${escapeHtml(ing.name)}">` : '🥫'}</div>
+    <div class="card-body">
+      <div class="card-title-row">
+        <div>
+          <div class="card-title">${escapeHtml(ing.name)}</div>
+          ${ing.category ? `<div class="card-cat">${escapeHtml(ing.category)}</div>` : ''}
+          ${ing.consumable ? `<div class="consumable-tag">consumível</div>` : ''}
+        </div>
+        <div class="card-actions">
+          <button class="mini-btn" data-cart-add-ing="${ing.id}" title="Adicionar ao carrinho">🛒</button>
+          <button class="mini-btn" data-edit-ing="${ing.id}" title="Editar">✎</button>
+          <button class="mini-btn" data-delete-ing="${ing.id}" title="Excluir">✕</button>
+        </div>
+      </div>
+      ${ing.consumable ? `
+      <div class="stepper-row">
+        <button class="step-btn-sm" data-consume-dec="${ing.id}">−</button>
+        <span class="stepper-label">consumir/repor 1 ${unitLabel(ing.unit)}</span>
+        <button class="step-btn-sm" data-consume-inc="${ing.id}">+</button>
+      </div>` : ''}
+      <div class="gauge-wrap">
+        <div class="gauge-track">
+          <div class="gauge-fill" style="width:${fillPct}%;background:${fillColor};"></div>
+          <div class="gauge-min-tick" style="left:${minPct}%;"></div>
+        </div>
+        <div class="gauge-labels">
+          <span>${fmtNum(ing.stockCurrent)} ${unitLabel(ing.unit)}</span>
+          ${statusPillHtml}
+        </div>
+      </div>
+      <div class="price-row">
+        <span>${ing.price ? `${fmtCurrency(pricePerBaseUnit(ing))}/${unitLabel(ing.unit)}` : 'sem preço'}</span>
+        <span class="price">${ing.nutrition && ing.nutrition.calories ? fmtNum(ing.nutrition.calories) + ' kcal' : ''}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   INGREDIENT FORM MODAL
+============================================================ */
+let ingPhotoData = null;
+
+function adjustConsumableStock(type, id, delta){
+  const source = type==='ingredient' ? state.ingredients : state.despensaItems;
+  const idx = source.findIndex(i => i.id === id);
+  if(idx < 0) return;
+  source[idx].stockCurrent = Math.max(0, Math.round((source[idx].stockCurrent + delta) * 100) / 100);
+  if(type==='ingredient'){ saveIngredients(); renderIngredientsView(); }
+  else { saveDespensa(); renderDespensaView(); }
+  updateTabBadges();
+}
+
+function openIngredientForm(id){
+  const editing = id ? state.ingredients.find(i=>i.id===id) : null;
+  ingPhotoData = editing ? editing.photo : null;
+
+  const html = `
+    <div class="modal-header">
+      <h2>${editing ? 'Editar ingrediente' : 'Novo ingrediente'}</h2>
+      <button class="modal-close" id="close-modal-btn">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="ingredient-form">
+        <div class="field">
+          <label>Link da foto (opcional)</label>
+          <div class="photo-upload">
+            <div class="photo-preview" id="ing-photo-preview">${ingPhotoData ? `<img src="${ingPhotoData}" onerror="this.parentElement.innerHTML='📷'">` : '📷'}</div>
+            <input type="url" id="ing-photo-url" value="${ingPhotoData ? escapeHtml(ingPhotoData) : ''}" placeholder="Cole aqui o link da imagem (Google Drive, etc.)">
+          </div>
+          <div class="hint">No Google Drive, compartilhe o arquivo como "qualquer pessoa com o link" e cole o link aqui.</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Nome *</label>
+            <input type="text" id="ing-name" required value="${editing ? escapeHtml(editing.name) : ''}" placeholder="Ex: Arroz branco">
+          </div>
+          <div class="field">
+            <label>Categoria</label>
+            <input type="text" id="ing-category" list="category-list" value="${editing ? escapeHtml(editing.category||'') : ''}" placeholder="Ex: Grãos e Cereais">
+            <datalist id="category-list">${CATEGORY_SUGGESTIONS.map(c=>`<option value="${c}">`).join('')}</datalist>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Unidade de medida *</label>
+          <select id="ing-unit">
+            <option value="g" ${editing && editing.unit==='g' ? 'selected':''}>Gramas (g)</option>
+            <option value="ml" ${editing && editing.unit==='ml' ? 'selected':''}>Mililitros (ml)</option>
+            <option value="un" ${editing && editing.unit==='un' ? 'selected':''}>Unidade (un)</option>
+          </select>
+        </div>
+
+        <div class="field checkbox-field">
+          <input type="checkbox" id="ing-consumable" ${editing && editing.consumable ? 'checked' : ''}>
+          <label for="ing-consumable">É um item consumível (ex: refrigerante, salgadinho, chocolate)</label>
+        </div>
+        <div class="hint" style="margin:-8px 0 14px 0;">Itens consumíveis ganham botões +/− no card pra você ajustar o estoque na hora, sem precisar criar uma receita — mas ainda podem ser usados normalmente dentro de receitas.</div>
+
+        <fieldset>
+          <legend>Estoque</legend>
+          <div class="field-row-3">
+            <div class="field"><label>Mínimo</label><input type="number" min="0" step="any" id="ing-stock-min" value="${editing ? editing.stockMin : 0}"></div>
+            <div class="field"><label>Máximo</label><input type="number" min="0" step="any" id="ing-stock-max" value="${editing ? editing.stockMax : 0}"></div>
+            <div class="field"><label>Tenho agora</label><input type="number" min="0" step="any" id="ing-stock-current" value="${editing ? editing.stockCurrent : 0}"></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Preço</legend>
+          <div class="field-row">
+            <div class="field"><label>Valor pago (R$)</label><input type="number" min="0" step="0.01" id="ing-price" value="${editing ? editing.price : ''}" placeholder="Ex: 12.90"></div>
+            <div class="field"><label>Referente a quantos <span id="price-unit-label">g</span></label><input type="number" min="0" step="any" id="ing-price-qty" value="${editing ? editing.priceQty : ''}" placeholder="Ex: 500"></div>
+          </div>
+          <div class="field"><label>Onde comprar (opcional)</label><input type="text" id="ing-where" value="${editing ? escapeHtml(editing.whereToBuy||'') : ''}" placeholder="Ex: Mercado São João, feira..."></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Informação nutricional <span id="nutri-basis-label">(por 100g)</span></legend>
+          <div class="field-row-3">
+            <div class="field"><label>Calorias (kcal)</label><input type="number" min="0" step="any" id="ing-nut-cal" value="${editing && editing.nutrition ? editing.nutrition.calories : ''}"></div>
+            <div class="field"><label>Proteína (g)</label><input type="number" min="0" step="any" id="ing-nut-prot" value="${editing && editing.nutrition ? editing.nutrition.protein : ''}"></div>
+            <div class="field"><label>Carboidrato (g)</label><input type="number" min="0" step="any" id="ing-nut-carb" value="${editing && editing.nutrition ? editing.nutrition.carbs : ''}"></div>
+          </div>
+          <div class="field"><label>Gordura (g)</label><input type="number" min="0" step="any" id="ing-nut-fat" value="${editing && editing.nutrition ? editing.nutrition.fat : ''}" style="max-width:calc(33% - 8px)"></div>
+        </fieldset>
+
+        <div class="field"><label>Notas (opcional)</label><textarea id="ing-notes" placeholder="Observações...">${editing ? escapeHtml(editing.notes||'') : ''}</textarea></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      ${editing ? `<button class="btn-danger-ghost" id="ing-delete-btn" style="margin-right:auto;">Excluir</button>` : ''}
+      <button class="btn-secondary" id="ing-cancel-btn">Cancelar</button>
+      <button class="btn-primary" id="ing-save-btn">${editing ? 'Salvar alterações' : 'Adicionar ingrediente'}</button>
+    </div>
+  `;
+
+  openModal(html, () => {
+    document.getElementById('close-modal-btn').onclick = closeModal;
+    document.getElementById('ing-cancel-btn').onclick = closeModal;
+
+    const unitSelect = document.getElementById('ing-unit');
+    const updateUnitLabels = () => {
+      const u = unitSelect.value;
+      document.getElementById('price-unit-label').textContent = unitLabel(u);
+      document.getElementById('nutri-basis-label').textContent = u === 'un' ? '(por unidade)' : `(por 100${unitLabel(u)})`;
+    };
+    unitSelect.onchange = updateUnitLabels;
+    updateUnitLabels();
+
+    document.getElementById('ing-photo-url').oninput = (e) => {
+      ingPhotoData = e.target.value.trim();
+      const preview = document.getElementById('ing-photo-preview');
+      preview.innerHTML = ingPhotoData ? `<img src="${escapeHtml(ingPhotoData)}" onerror="this.parentElement.innerHTML='📷'">` : '📷';
+    };
+
+    if(editing){
+      document.getElementById('ing-delete-btn').onclick = () => { closeModal(); deleteIngredient(editing.id); };
+    }
+
+    document.getElementById('ing-save-btn').onclick = () => {
+      const name = document.getElementById('ing-name').value.trim();
+      if(!name){ toast('Dê um nome ao ingrediente', 'error'); return; }
+      const data = {
+        id: editing ? editing.id : uid(),
+        name,
+        category: document.getElementById('ing-category').value.trim(),
+        photo: ingPhotoData,
+        unit: unitSelect.value,
+        consumable: document.getElementById('ing-consumable').checked,
+        stockMin: parseFloat(document.getElementById('ing-stock-min').value) || 0,
+        stockMax: parseFloat(document.getElementById('ing-stock-max').value) || 0,
+        stockCurrent: parseFloat(document.getElementById('ing-stock-current').value) || 0,
+        price: parseFloat(document.getElementById('ing-price').value) || 0,
+        priceQty: parseFloat(document.getElementById('ing-price-qty').value) || 0,
+        whereToBuy: document.getElementById('ing-where').value.trim(),
+        nutrition: {
+          calories: parseFloat(document.getElementById('ing-nut-cal').value) || 0,
+          protein: parseFloat(document.getElementById('ing-nut-prot').value) || 0,
+          carbs: parseFloat(document.getElementById('ing-nut-carb').value) || 0,
+          fat: parseFloat(document.getElementById('ing-nut-fat').value) || 0
+        },
+        notes: document.getElementById('ing-notes').value.trim()
+      };
+      if(editing){
+        const idx = state.ingredients.findIndex(i=>i.id===editing.id);
+        state.ingredients[idx] = data;
+        toast('Ingrediente atualizado', 'success');
+      } else {
+        state.ingredients.push(data);
+        toast('Ingrediente adicionado', 'success');
+      }
+      saveIngredients();
+      closeModal();
+      renderAll();
+    };
+  });
+}
+
+function deleteIngredient(id){
+  const ing = state.ingredients.find(i=>i.id===id);
+  if(!ing) return;
+  const usedIn = state.recipes.filter(r => (r.ingredients||[]).some(ri=>ri.ingredientId===id));
+  const warn = usedIn.length ? `\n\nEste ingrediente é usado em ${usedIn.length} receita(s). Ele será removido delas.` : '';
+  if(!confirm(`Excluir "${ing.name}"?${warn}`)) return;
+  state.ingredients = state.ingredients.filter(i=>i.id!==id);
+  state.recipes.forEach(r => { r.ingredients = (r.ingredients||[]).filter(ri=>ri.ingredientId!==id); });
+  state.cart = state.cart.filter(c => !(c.refType==='ingredient' && c.refId===id));
+  saveIngredients();
+  saveRecipes();
+  saveCart();
+  toast('Ingrediente excluído', 'success');
+  renderAll();
+}
+
+/* ============================================================
+   RENDER: DESPENSA VIEW (itens de casa, não-receita)
+============================================================ */
+function renderDespensaView(){
+  const container = document.getElementById('view-despensa');
+  const lowCount = state.despensaItems.filter(i => stockStatus(i)==='low').length;
+
+  let filtered = state.despensaItems.filter(i => {
+    if(despSearch && !i.name.toLowerCase().includes(despSearch.toLowerCase())) return false;
+    if(despCategoryFilter && i.category !== despCategoryFilter) return false;
+    if(despLowStockOnly && stockStatus(i) !== 'low') return false;
+    return true;
+  }).sort((a,b)=> a.name.localeCompare(b.name, 'pt-BR'));
+
+  const categories = Array.from(new Set(state.despensaItems.map(i=>i.category).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+
+  let dashHtml = '';
+  if(state.despensaItems.length){
+    dashHtml = `
+    <div class="dash-strip">
+      <div class="dash-card"><div class="num">${state.despensaItems.length}</div><div class="lbl">Itens cadastrados</div></div>
+      <div class="dash-card ${lowCount>0?'danger':''}"><div class="num">${lowCount}</div><div class="lbl">Abaixo do estoque mínimo</div></div>
+      <div class="dash-card"><div class="num">${fmtCurrency(state.despensaItems.reduce((s,i)=>s+costForQuantity(i,i.stockCurrent),0))}</div><div class="lbl">Valor estimado em estoque</div></div>
+    </div>`;
+  }
+
+  let cardsHtml;
+  if(!state.despensaItems.length){
+    cardsHtml = `<div class="empty-state"><div class="glyph">🧻</div><h3>Nenhum item de casa ainda</h3><p>Cadastre itens que não são ingredientes de receita: pasta de dente, papel higiênico, produtos de limpeza...</p></div>`;
+  } else if(!filtered.length){
+    cardsHtml = `<div class="empty-state"><div class="glyph">🔍</div><h3>Nada encontrado</h3><p>Ajuste a busca ou os filtros.</p></div>`;
+  } else {
+    cardsHtml = `<div class="grid">` + filtered.map(renderDespensaCard).join('') + `</div>`;
+  }
+
+  container.innerHTML = `
+    ${dashHtml}
+    <div class="toolbar">
+      <div class="search-box"><input type="text" id="desp-search-input" placeholder="Buscar item..." value="${escapeHtml(despSearch)}"></div>
+      <select class="filter-select" id="desp-category-filter">
+        <option value="">Todas categorias</option>
+        ${categories.map(c=>`<option value="${escapeHtml(c)}" ${c===despCategoryFilter?'selected':''}>${escapeHtml(c)}</option>`).join('')}
+      </select>
+      <button class="toggle-chip ${despLowStockOnly?'active':''}" id="desp-lowstock-toggle">⚠ Estoque baixo</button>
+      <button class="btn-primary" id="btn-add-despensa">+ Novo item</button>
+    </div>
+    ${cardsHtml}
+  `;
+
+  document.getElementById('desp-search-input').oninput = (e)=>{ despSearch = e.target.value; renderDespensaView(); };
+  document.getElementById('desp-category-filter').onchange = (e)=>{ despCategoryFilter = e.target.value; renderDespensaView(); };
+  document.getElementById('desp-lowstock-toggle').onclick = ()=>{ despLowStockOnly = !despLowStockOnly; renderDespensaView(); };
+  document.getElementById('btn-add-despensa').onclick = ()=> openDespensaForm();
+
+  container.querySelectorAll('[data-edit-desp]').forEach(btn=>{
+    btn.onclick = (e)=>{ e.stopPropagation(); openDespensaForm(btn.dataset.editDesp); };
+  });
+  container.querySelectorAll('[data-delete-desp]').forEach(btn=>{
+    btn.onclick = (e)=>{ e.stopPropagation(); deleteDespensaItem(btn.dataset.deleteDesp); };
+  });
+  container.querySelectorAll('[data-cart-add-desp]').forEach(btn=>{
+    btn.onclick = (e)=>{ e.stopPropagation(); addToCartManual('despensa', btn.dataset.cartAddDesp); };
+  });
+}
+
+function renderDespensaCard(item){
+  const status = stockStatus(item);
+  const displayMax = Math.max(item.stockMax||0, item.stockCurrent||0, 1);
+  const fillPct = Math.min(100, (item.stockCurrent/displayMax)*100);
+  const minPct = Math.min(100, (item.stockMin/displayMax)*100);
+  const fillColor = status==='low' ? 'var(--danger)' : (status==='full' ? 'var(--warning)' : 'var(--sage)');
+  const statusPillHtml = status==='low' ? `<span class="status-pill status-low">baixo</span>` : (status==='full' ? `<span class="status-pill status-full">cheio</span>` : `<span class="status-pill status-ok">ok</span>`);
+
+  return `
+  <div class="card">
+    <div class="card-photo">${item.photo ? `<img src="${item.photo}" alt="${escapeHtml(item.name)}">` : '🧴'}</div>
+    <div class="card-body">
+      <div class="card-title-row">
+        <div>
+          <div class="card-title">${escapeHtml(item.name)}</div>
+          ${item.category ? `<div class="card-cat">${escapeHtml(item.category)}</div>` : ''}
+        </div>
+        <div class="card-actions">
+          <button class="mini-btn" data-cart-add-desp="${item.id}" title="Adicionar ao carrinho">🛒</button>
+          <button class="mini-btn" data-edit-desp="${item.id}" title="Editar">✎</button>
+          <button class="mini-btn" data-delete-desp="${item.id}" title="Excluir">✕</button>
+        </div>
+      </div>
+      <div class="gauge-wrap">
+        <div class="gauge-track">
+          <div class="gauge-fill" style="width:${fillPct}%;background:${fillColor};"></div>
+          <div class="gauge-min-tick" style="left:${minPct}%;"></div>
+        </div>
+        <div class="gauge-labels">
+          <span>${fmtNum(item.stockCurrent)} ${unitLabel(item.unit)}</span>
+          ${statusPillHtml}
+        </div>
+      </div>
+      <div class="price-row">
+        <span>${item.price ? `${fmtCurrency(pricePerBaseUnit(item))}/${unitLabel(item.unit)}` : 'sem preço'}</span>
+        <span class="price">${item.whereToBuy ? escapeHtml(item.whereToBuy) : ''}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+let despPhotoData = null;
+
+function openDespensaForm(id){
+  const editing = id ? state.despensaItems.find(i=>i.id===id) : null;
+  despPhotoData = editing ? editing.photo : null;
+
+  const html = `
+    <div class="modal-header">
+      <h2>${editing ? 'Editar item' : 'Novo item de casa'}</h2>
+      <button class="modal-close" id="close-modal-btn">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="despensa-form">
+        <div class="field">
+          <label>Link da foto (opcional)</label>
+          <div class="photo-upload">
+            <div class="photo-preview" id="desp-photo-preview">${despPhotoData ? `<img src="${despPhotoData}" onerror="this.parentElement.innerHTML='📷'">` : '📷'}</div>
+            <input type="url" id="desp-photo-url" value="${despPhotoData ? escapeHtml(despPhotoData) : ''}" placeholder="Cole aqui o link da imagem (Google Drive, etc.)">
+          </div>
+          <div class="hint">No Google Drive, compartilhe o arquivo como "qualquer pessoa com o link" e cole o link aqui.</div>
+        </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Nome *</label>
+            <input type="text" id="desp-name" required value="${editing ? escapeHtml(editing.name) : ''}" placeholder="Ex: Papel higiênico">
+          </div>
+          <div class="field">
+            <label>Categoria</label>
+            <input type="text" id="desp-category" list="desp-category-list" value="${editing ? escapeHtml(editing.category||'') : ''}" placeholder="Ex: Higiene Pessoal">
+            <datalist id="desp-category-list">${DESPENSA_CATEGORY_SUGGESTIONS.map(c=>`<option value="${c}">`).join('')}</datalist>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Unidade de medida *</label>
+          <input type="text" id="desp-unit" list="desp-unit-list" value="${editing ? escapeHtml(editing.unit||'un') : 'un'}" placeholder="Ex: rolo, tubo, pacote, un">
+          <datalist id="desp-unit-list">${DESPENSA_UNIT_SUGGESTIONS.map(u=>`<option value="${u}">`).join('')}</datalist>
+        </div>
+
+        <fieldset>
+          <legend>Estoque</legend>
+          <div class="field-row-3">
+            <div class="field"><label>Mínimo</label><input type="number" min="0" step="any" id="desp-stock-min" value="${editing ? editing.stockMin : 0}"></div>
+            <div class="field"><label>Máximo</label><input type="number" min="0" step="any" id="desp-stock-max" value="${editing ? editing.stockMax : 0}"></div>
+            <div class="field"><label>Tenho agora</label><input type="number" min="0" step="any" id="desp-stock-current" value="${editing ? editing.stockCurrent : 0}"></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Preço</legend>
+          <div class="field-row">
+            <div class="field"><label>Valor pago (R$)</label><input type="number" min="0" step="0.01" id="desp-price" value="${editing ? editing.price : ''}" placeholder="Ex: 8.50"></div>
+            <div class="field"><label>Referente a quantas unidades</label><input type="number" min="0" step="any" id="desp-price-qty" value="${editing ? editing.priceQty : ''}" placeholder="Ex: 1"></div>
+          </div>
+          <div class="field"><label>Onde comprar (opcional)</label><input type="text" id="desp-where" value="${editing ? escapeHtml(editing.whereToBuy||'') : ''}" placeholder="Ex: Mercado São João, farmácia..."></div>
+        </fieldset>
+
+        <div class="field"><label>Notas (opcional)</label><textarea id="desp-notes" placeholder="Observações...">${editing ? escapeHtml(editing.notes||'') : ''}</textarea></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      ${editing ? `<button class="btn-danger-ghost" id="desp-delete-btn" style="margin-right:auto;">Excluir</button>` : ''}
+      <button class="btn-secondary" id="desp-cancel-btn">Cancelar</button>
+      <button class="btn-primary" id="desp-save-btn">${editing ? 'Salvar alterações' : 'Adicionar item'}</button>
+    </div>
+  `;
+
+  openModal(html, () => {
+    document.getElementById('close-modal-btn').onclick = closeModal;
+    document.getElementById('desp-cancel-btn').onclick = closeModal;
+
+    document.getElementById('desp-photo-url').oninput = (e) => {
+      despPhotoData = e.target.value.trim();
+      const preview = document.getElementById('desp-photo-preview');
+      preview.innerHTML = despPhotoData ? `<img src="${escapeHtml(despPhotoData)}" onerror="this.parentElement.innerHTML='📷'">` : '📷';
+    };
+
+    if(editing){
+      document.getElementById('desp-delete-btn').onclick = () => { closeModal(); deleteDespensaItem(editing.id); };
+    }
+
+    document.getElementById('desp-save-btn').onclick = () => {
+      const name = document.getElementById('desp-name').value.trim();
+      if(!name){ toast('Dê um nome ao item', 'error'); return; }
+      const data = {
+        id: editing ? editing.id : uid(),
+        name,
+        category: document.getElementById('desp-category').value.trim(),
+        photo: despPhotoData,
+        unit: document.getElementById('desp-unit').value.trim() || 'un',
+        stockMin: parseFloat(document.getElementById('desp-stock-min').value) || 0,
+        stockMax: parseFloat(document.getElementById('desp-stock-max').value) || 0,
+        stockCurrent: parseFloat(document.getElementById('desp-stock-current').value) || 0,
+        price: parseFloat(document.getElementById('desp-price').value) || 0,
+        priceQty: parseFloat(document.getElementById('desp-price-qty').value) || 0,
+        whereToBuy: document.getElementById('desp-where').value.trim(),
+        notes: document.getElementById('desp-notes').value.trim()
+      };
+      if(editing){
+        const idx = state.despensaItems.findIndex(i=>i.id===editing.id);
+        state.despensaItems[idx] = data;
+        toast('Item atualizado', 'success');
+      } else {
+        state.despensaItems.push(data);
+        toast('Item adicionado', 'success');
+      }
+      saveDespensa();
+      closeModal();
+      renderAll();
+    };
+  });
+}
+
+function deleteDespensaItem(id){
+  const item = state.despensaItems.find(i=>i.id===id);
+  if(!item) return;
+  if(!confirm(`Excluir "${item.name}"?`)) return;
+  state.despensaItems = state.despensaItems.filter(i=>i.id!==id);
+  state.cart = state.cart.filter(c => !(c.refType==='despensa' && c.refId===id));
+  saveDespensa();
+  saveCart();
+  toast('Item excluído', 'success');
+  renderAll();
+}
+
+/* ============================================================
+   RENDER: RECIPES VIEW
+============================================================ */
+function renderRecipesView(){
+  const container = document.getElementById('view-recipes');
+
+  let filtered = state.recipes.filter(r => {
+    if(recSearch && !r.name.toLowerCase().includes(recSearch.toLowerCase())) return false;
+    if(recReadyOnly && !computeReadiness(r).ready) return false;
+    return true;
+  }).sort((a,b)=> a.name.localeCompare(b.name, 'pt-BR'));
+
+  let cardsHtml;
+  if(!state.recipes.length){
+    cardsHtml = `<div class="empty-state"><div class="glyph">📖</div><h3>Nenhuma receita ainda</h3><p>Cadastre suas receitas e veja na hora se sua despensa dá conta.</p></div>`;
+  } else if(!filtered.length){
+    cardsHtml = `<div class="empty-state"><div class="glyph">🔍</div><h3>Nada encontrado</h3><p>Ajuste a busca ou os filtros.</p></div>`;
+  } else {
+    cardsHtml = `<div class="grid">` + filtered.map(renderRecipeCard).join('') + `</div>`;
+  }
+
+  container.innerHTML = `
+    <div class="toolbar">
+      <div class="search-box"><input type="text" id="rec-search-input" placeholder="Buscar receita..." value="${escapeHtml(recSearch)}"></div>
+      <button class="toggle-chip ${recReadyOnly?'active':''}" id="rec-ready-toggle">✓ Só as que dá pra fazer</button>
+      <button class="btn-primary" id="btn-add-recipe">+ Nova receita</button>
+    </div>
+    ${cardsHtml}
+  `;
+
+  document.getElementById('rec-search-input').oninput = (e)=>{ recSearch = e.target.value; renderRecipesView(); };
+  document.getElementById('rec-ready-toggle').onclick = ()=>{ recReadyOnly = !recReadyOnly; renderRecipesView(); };
+  document.getElementById('btn-add-recipe').onclick = ()=> openRecipeForm();
+
+  container.querySelectorAll('[data-open-recipe]').forEach(card=>{
+    card.onclick = ()=> openRecipeDetail(card.dataset.openRecipe);
+  });
+}
+
+function renderRecipeCard(rec){
+  const readiness = computeReadiness(rec);
+  const badge = readiness.ready
+    ? `<span class="ready-badge ready-yes"><span class="ready-dot"></span>Pronto pra fazer</span>`
+    : `<span class="ready-badge ready-no"><span class="ready-dot"></span>Faltam ${readiness.total - readiness.readyCount} de ${readiness.total}</span>`;
+  return `
+  <div class="card" style="cursor:pointer;" data-open-recipe="${rec.id}">
+    <div class="card-photo">${rec.photo ? `<img src="${rec.photo}" alt="${escapeHtml(rec.name)}">` : '🍲'}</div>
+    <div class="card-body">
+      <div class="card-title-row">
+        <div>
+          <div class="card-title">${escapeHtml(rec.name)}</div>
+          <div class="card-cat">${rec.servings || 1} porç${rec.servings===1?'ão':'ões'}</div>
+        </div>
+      </div>
+      ${badge}
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   RECIPE FORM MODAL
+============================================================ */
+let recPhotoData = null;
+let recIngredientRows = []; // {ingredientId, quantity}
+
+function openRecipeForm(id){
+  const editing = id ? state.recipes.find(r=>r.id===id) : null;
+  recPhotoData = editing ? editing.photo : null;
+  recIngredientRows = editing ? JSON.parse(JSON.stringify(editing.ingredients||[])) : [];
+  if(recIngredientRows.length===0 && state.ingredients.length) recIngredientRows.push({ ingredientId:'', quantity:'' });
+
+  const html = `
+    <div class="modal-header">
+      <h2>${editing ? 'Editar receita' : 'Nova receita'}</h2>
+      <button class="modal-close" id="close-modal-btn">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="recipe-form">
+        <div class="field">
+          <label>Link da foto (opcional)</label>
+          <div class="photo-upload">
+            <div class="photo-preview" id="rec-photo-preview">${recPhotoData ? `<img src="${recPhotoData}" onerror="this.parentElement.innerHTML='📷'">` : '📷'}</div>
+            <input type="url" id="rec-photo-url" value="${recPhotoData ? escapeHtml(recPhotoData) : ''}" placeholder="Cole aqui o link da imagem (Google Drive, etc.)">
+          </div>
+          <div class="hint">No Google Drive, compartilhe o arquivo como "qualquer pessoa com o link" e cole o link aqui.</div>
+        </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label>Nome *</label><input type="text" id="rec-name" required value="${editing ? escapeHtml(editing.name) : ''}" placeholder="Ex: Risoto de cogumelos"></div>
+          <div class="field"><label>Porções (rendimento) *</label><input type="number" min="1" step="1" id="rec-servings" value="${editing ? editing.servings : 2}"></div>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label>Link do YouTube (opcional)</label><input type="url" id="rec-yt-link" value="${editing ? escapeHtml(editing.videoLink||'') : ''}" placeholder="https://youtube.com/..."></div>
+          <div class="field"><label>Link do site (opcional)</label><input type="url" id="rec-site-link" value="${editing ? escapeHtml(editing.siteLink||'') : ''}" placeholder="https://..."></div>
+        </div>
+
+        <fieldset>
+          <legend>Ingredientes</legend>
+          <div id="rec-ingredients-rows"></div>
+          <button type="button" class="btn-ghost" id="rec-add-row-btn" ${!state.ingredients.length ? 'disabled title="Cadastre ingredientes primeiro"' : ''}>+ Adicionar ingrediente</button>
+          ${!state.ingredients.length ? `<div class="hint">Cadastre ingredientes na aba "Ingredientes" antes de montar a receita.</div>` : ''}
+        </fieldset>
+
+        <div class="field"><label>Modo de preparo</label><textarea id="rec-instructions" rows="6" placeholder="Passo a passo...">${editing ? escapeHtml(editing.instructions||'') : ''}</textarea></div>
+        <div class="field"><label>Notas (opcional)</label><textarea id="rec-notes" placeholder="Observações...">${editing ? escapeHtml(editing.notes||'') : ''}</textarea></div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      ${editing ? `<button class="btn-danger-ghost" id="rec-delete-btn" style="margin-right:auto;">Excluir</button>` : ''}
+      <button class="btn-secondary" id="rec-cancel-btn">Cancelar</button>
+      <button class="btn-primary" id="rec-save-btn">${editing ? 'Salvar alterações' : 'Adicionar receita'}</button>
+    </div>
+  `;
+
+  openModal(html, () => {
+    document.getElementById('close-modal-btn').onclick = closeModal;
+    document.getElementById('rec-cancel-btn').onclick = closeModal;
+
+    document.getElementById('rec-photo-url').oninput = (e) => {
+      recPhotoData = e.target.value.trim();
+      const preview = document.getElementById('rec-photo-preview');
+      preview.innerHTML = recPhotoData ? `<img src="${escapeHtml(recPhotoData)}" onerror="this.parentElement.innerHTML='📷'">` : '📷';
+    };
+
+    renderIngredientRows();
+    document.getElementById('rec-add-row-btn').onclick = () => {
+      recIngredientRows.push({ ingredientId:'', quantity:'' });
+      renderIngredientRows();
+    };
+
+    if(editing){
+      document.getElementById('rec-delete-btn').onclick = () => { closeModal(); deleteRecipe(editing.id); };
+    }
+
+    document.getElementById('rec-save-btn').onclick = () => {
+      const name = document.getElementById('rec-name').value.trim();
+      if(!name){ toast('Dê um nome à receita', 'error'); return; }
+      collectIngredientRowValues();
+      const cleanRows = recIngredientRows.filter(r => r.ingredientId && r.quantity > 0);
+      const data = {
+        id: editing ? editing.id : uid(),
+        name,
+        servings: parseInt(document.getElementById('rec-servings').value) || 1,
+        photo: recPhotoData,
+        videoLink: document.getElementById('rec-yt-link').value.trim(),
+        siteLink: document.getElementById('rec-site-link').value.trim(),
+        ingredients: cleanRows,
+        instructions: document.getElementById('rec-instructions').value.trim(),
+        notes: document.getElementById('rec-notes').value.trim()
+      };
+      if(editing){
+        const idx = state.recipes.findIndex(r=>r.id===editing.id);
+        state.recipes[idx] = data;
+        toast('Receita atualizada', 'success');
+      } else {
+        state.recipes.push(data);
+        toast('Receita adicionada', 'success');
+      }
+      saveRecipes();
+      closeModal();
+      renderAll();
+    };
+  });
+}
+
+function collectIngredientRowValues(){
+  const rowsEl = document.querySelectorAll('#rec-ingredients-rows .ing-row');
+  recIngredientRows = Array.from(rowsEl).map(rowEl => ({
+    ingredientId: rowEl.querySelector('.ing-select').value,
+    quantity: parseFloat(rowEl.querySelector('.ing-qty').value) || 0
+  }));
+}
+
+function renderIngredientRows(){
+  const wrap = document.getElementById('rec-ingredients-rows');
+  wrap.innerHTML = recIngredientRows.map((row, idx) => {
+    const selected = state.ingredients.find(i=>i.id===row.ingredientId);
+    return `
+    <div class="ing-row" data-idx="${idx}">
+      <select class="ing-select">
+        <option value="">Selecione...</option>
+        ${state.ingredients.map(i=>`<option value="${i.id}" ${i.id===row.ingredientId?'selected':''}>${escapeHtml(i.name)}</option>`).join('')}
+      </select>
+      <input type="number" class="ing-qty" min="0" step="any" placeholder="Qtd (${selected ? unitLabel(selected.unit) : 'un'})" value="${row.quantity || ''}">
+      <button type="button" class="remove-row-btn" data-remove-idx="${idx}">×</button>
+    </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('.ing-select').forEach(sel => {
+    sel.onchange = () => {
+      collectIngredientRowValues();
+      renderIngredientRows();
+    };
+  });
+  wrap.querySelectorAll('[data-remove-idx]').forEach(btn => {
+    btn.onclick = () => {
+      collectIngredientRowValues();
+      recIngredientRows.splice(parseInt(btn.dataset.removeIdx), 1);
+      renderIngredientRows();
+    };
+  });
+}
+
+function deleteRecipe(id){
+  const rec = state.recipes.find(r=>r.id===id);
+  if(!rec) return;
+  if(!confirm(`Excluir a receita "${rec.name}"?`)) return;
+  state.recipes = state.recipes.filter(r=>r.id!==id);
+  saveRecipes();
+  toast('Receita excluída', 'success');
+  renderAll();
+}
+
+/* ============================================================
+   RECIPE DETAIL MODAL
+============================================================ */
+function openRecipeDetail(id){
+  const rec = state.recipes.find(r=>r.id===id);
+  if(!rec) return;
+  let currentServings = rec.servings || 1;
+
+  function buildBody(){
+    const readiness = computeReadiness(rec, currentServings);
+    const factor = currentServings / (rec.servings||1);
+    let totalNutrition = { calories:0, protein:0, carbs:0, fat:0 };
+    let totalCost = 0;
+    readiness.rows.forEach(r => {
+      if(r.ing){
+        const n = nutritionForQuantity(r.ing, r.needed);
+        totalNutrition.calories += n.calories;
+        totalNutrition.protein += n.protein;
+        totalNutrition.carbs += n.carbs;
+        totalNutrition.fat += n.fat;
+        totalCost += costForQuantity(r.ing, r.needed);
+      }
+    });
+    const perServing = { calories: totalNutrition.calories/currentServings, protein: totalNutrition.protein/currentServings };
+
+    return `
+      <div class="detail-photo">${rec.photo ? `<img src="${rec.photo}">` : '🍲'}</div>
+
+      ${readiness.ready
+        ? `<div class="banner good">✓ Você tem todos os ingredientes para esta receita.</div>`
+        : `<div class="banner bad">⚠ Faltam ${readiness.rows.filter(r=>!r.ok).length} ingrediente(s) para fazer esta receita.</div>`}
+
+      <div class="servings-control">
+        <span style="font-size:12.5px;color:var(--text-dim);">Porções:</span>
+        <button class="step-btn" id="serv-minus">−</button>
+        <span class="servings-val">${currentServings}</span>
+        <button class="step-btn" id="serv-plus">+</button>
+      </div>
+
+      <ul class="ingredient-check-list">
+        ${readiness.rows.map(r => `
+          <li>
+            <span class="ic-name">
+              <span class="ic-mark ${r.ok?'yes':'no'}">${r.ok?'✓':'✕'}</span>
+              ${r.ing ? escapeHtml(r.ing.name) : '<em style="color:var(--text-faint)">ingrediente removido</em>'}
+            </span>
+            <span class="ic-qty">
+              ${fmtNum(r.needed)}${r.ing ? unitLabel(r.ing.unit) : ''} necessário · ${fmtNum(r.have)}${r.ing ? unitLabel(r.ing.unit) : ''} em casa
+              ${!r.ok ? `<span class="ic-missing"> (faltam ${fmtNum(r.missing)}${r.ing?unitLabel(r.ing.unit):''})</span>` : ''}
+            </span>
+          </li>
+        `).join('') || `<li><span style="color:var(--text-faint);">Nenhum ingrediente adicionado a esta receita.</span></li>`}
+      </ul>
+
+      <div class="stat-row">
+        <div class="stat-box"><div class="val">${fmtNum(totalNutrition.calories)}</div><div class="lbl">kcal total</div></div>
+        <div class="stat-box"><div class="val">${fmtNum(perServing.calories)}</div><div class="lbl">kcal / porção</div></div>
+        <div class="stat-box"><div class="val">${fmtNum(totalNutrition.protein)}g</div><div class="lbl">proteína total</div></div>
+        <div class="stat-box"><div class="val">${fmtCurrency(totalCost)}</div><div class="lbl">custo estimado</div></div>
+      </div>
+
+      ${(rec.videoLink || rec.siteLink) ? `
+      <div class="link-row">
+        ${rec.videoLink ? `<a class="link-btn" href="${escapeHtml(rec.videoLink)}" target="_blank" rel="noopener">▶ Assistir no YouTube</a>` : ''}
+        ${rec.siteLink ? `<a class="link-btn" href="${escapeHtml(rec.siteLink)}" target="_blank" rel="noopener">🔗 Ver receita original</a>` : ''}
+      </div>` : ''}
+
+      ${rec.instructions ? `<div class="instructions-block">${escapeHtml(rec.instructions)}</div>` : ''}
+      ${rec.notes ? `<div class="hint" style="margin-bottom:10px;">Notas: ${escapeHtml(rec.notes)}</div>` : ''}
+    `;
+  }
+
+  function render(){
+    document.getElementById('recipe-detail-body').innerHTML = buildBody();
+    document.getElementById('serv-minus').onclick = () => { if(currentServings>1){ currentServings--; render(); } };
+    document.getElementById('serv-plus').onclick = () => { currentServings++; render(); };
+  }
+
+  const html = `
+    <div class="modal-header">
+      <h2>${escapeHtml(rec.name)}</h2>
+      <button class="modal-close" id="close-modal-btn">×</button>
+    </div>
+    <div class="modal-body" id="recipe-detail-body"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="detail-edit-btn" style="margin-right:auto;">Editar</button>
+      <button class="btn-secondary" id="detail-close-btn">Fechar</button>
+      <button class="btn-primary" id="detail-cook-btn">Cozinhei isso! (baixar do estoque)</button>
+    </div>
+  `;
+
+  openModal(html, () => {
+    render();
+    document.getElementById('close-modal-btn').onclick = closeModal;
+    document.getElementById('detail-close-btn').onclick = closeModal;
+    document.getElementById('detail-edit-btn').onclick = () => { closeModal(); openRecipeForm(rec.id); };
+    document.getElementById('detail-cook-btn').onclick = () => {
+      const readiness = computeReadiness(rec, currentServings);
+      const missing = readiness.rows.filter(r=>!r.ok);
+      if(missing.length){
+        if(!confirm(`Faltam ingredientes para ${missing.length} item(ns). Deseja baixar o estoque mesmo assim (ficará em 0 onde faltar)?`)) return;
+      }
+      readiness.rows.forEach(r => {
+        if(r.ing){
+          const idx = state.ingredients.findIndex(i=>i.id===r.ing.id);
+          state.ingredients[idx].stockCurrent = Math.max(0, state.ingredients[idx].stockCurrent - r.needed);
+        }
+      });
+      saveIngredients();
+      toast('Estoque atualizado com base na receita', 'success');
+      closeModal();
+      renderAll();
+    };
+  });
+}
+
+/* ============================================================
+   RENDER: CART VIEW (carrinho de compras)
+============================================================ */
+function getCartCandidates(){
+  // itens abaixo do mínimo, tanto ingredientes quanto despensa, que ainda não estão no carrinho
+  const inCart = (type, id) => state.cart.some(c => c.refType===type && c.refId===id);
+  const fromIngredients = state.ingredients
+    .filter(i => stockStatus(i)==='low' && !inCart('ingredient', i.id))
+    .map(i => ({ type:'ingredient', item:i }));
+  const fromDespensa = state.despensaItems
+    .filter(i => stockStatus(i)==='low' && !inCart('despensa', i.id))
+    .map(i => ({ type:'despensa', item:i }));
+  return [...fromIngredients, ...fromDespensa].sort((a,b)=>a.item.name.localeCompare(b.item.name,'pt-BR'));
+}
+
+function suggestedQty(item){
+  if(item.stockMax && item.stockMax > item.stockCurrent) return Math.round((item.stockMax - item.stockCurrent)*100)/100;
+  return Math.max(1, Math.round((item.stockMin - item.stockCurrent)*100)/100);
+}
+
+function addToCartManual(type, id){
+  const source = type==='ingredient' ? state.ingredients : state.despensaItems;
+  const item = source.find(i => i.id === id);
+  if(!item) return;
+  if(state.cart.some(c => c.refType===type && c.refId===id)){
+    toast('Esse item já está no carrinho', 'error');
+    return;
+  }
+  state.cart.push({ id: uid(), refType: type, refId: id, name: item.name, unit: item.unit, quantity: suggestedQty(item), checked: false });
+  saveCart();
+  toast(`${item.name} adicionado ao carrinho`, 'success');
+  updateTabBadges();
+  if(currentTab === 'cart') renderCartView();
+}
+
+function renderPurchaseHistorySection(){
+  const months = Object.keys(state.purchaseLog).sort().reverse();
+  if(!months.length){
+    return `
+      <div class="cart-section-title" style="margin-top:28px;">Histórico de compras <span class="count">0</span></div>
+      <p class="hint" style="margin-bottom:10px;">Nenhuma compra finalizada ainda. Ao dar check-out no carrinho, os itens entram aqui, somados por mês.</p>
+    `;
+  }
+  const selected = (historySelectedMonth && months.includes(historySelectedMonth)) ? historySelectedMonth : months[0];
+  const bucket = state.purchaseLog[selected] || {};
+  const rows = Object.values(bucket).sort((a,b)=> a.name.localeCompare(b.name,'pt-BR'));
+
+  return `
+    <div class="cart-section-title" style="margin-top:28px;">Histórico de compras <span class="count">${months.length} ${months.length===1?'mês':'meses'}</span></div>
+    <div class="toolbar" style="margin-bottom:10px;">
+      <select class="filter-select" id="history-month-select">
+        ${months.map(m => `<option value="${m}" ${m===selected?'selected':''}>${monthLabel(m)}</option>`).join('')}
+      </select>
+    </div>
+    <ul class="cart-list">
+      ${rows.length ? rows.map(r => `
+        <li class="cart-row">
+          <div class="row-main">
+            <div class="row-name">${escapeHtml(r.name)}</div>
+          </div>
+          <span class="history-qty">${fmtNum(r.qty)} ${unitLabel(r.unit)}</span>
+        </li>
+      `).join('') : `<li class="cart-row"><span class="hint">Nenhum item comprado nesse mês.</span></li>`}
+    </ul>
+  `;
+}
+
+function renderCartView(){
+  const container = document.getElementById('view-cart');
+  const candidates = getCartCandidates();
+
+  const suggestionsHtml = candidates.length ? `
+    <div class="cart-section-title">Sugestões (abaixo do estoque mínimo) <span class="count">${candidates.length}</span></div>
+    <ul class="suggestion-list">
+      ${candidates.map(c => `
+        <li class="suggestion-row">
+          <div class="suggestion-row-thumb">${c.item.photo ? `<img src="${c.item.photo}">` : (c.type==='ingredient' ? '🥫' : '🧴')}</div>
+          <div class="row-main">
+            <div class="row-name">${escapeHtml(c.item.name)}</div>
+            <div class="row-sub">tem ${fmtNum(c.item.stockCurrent)}${unitLabel(c.item.unit)} · mínimo ${fmtNum(c.item.stockMin)}${unitLabel(c.item.unit)}</div>
+          </div>
+          <span class="type-tag">${c.type==='ingredient' ? 'ingrediente' : 'despensa'}</span>
+          <button class="btn-ghost" data-add-cart="${c.type}:${c.item.id}">+ Adicionar</button>
+        </li>
+      `).join('')}
+    </ul>
+  ` : `<div class="cart-section-title">Sugestões (abaixo do estoque mínimo) <span class="count">0</span></div><p class="hint" style="margin-bottom:22px;">Nada abaixo do mínimo no momento — ou já está tudo no carrinho.</p>`;
+
+  const cartRows = state.cart.map(c => {
+    const source = c.refType==='ingredient' ? state.ingredients : state.despensaItems;
+    const live = source.find(i => i.id === c.refId);
+    const name = live ? live.name : (c.name + ' (removido)');
+    const unit = live ? live.unit : c.unit;
+    const photo = live ? live.photo : null;
+    const cost = live ? costForQuantity(live, c.quantity || 0) : null;
+    return { c, live, name, unit, photo, cost };
+  });
+
+  const totalAll = cartRows.reduce((s,r)=> s + (r.cost || 0), 0);
+  const totalChecked = cartRows.filter(r=>r.c.checked).reduce((s,r)=> s + (r.cost || 0), 0);
+
+  const cartHtml = cartRows.length ? `
+    <div class="cart-section-title">Meu carrinho <span class="count">${cartRows.length}</span></div>
+    <ul class="cart-list">
+      ${cartRows.map(r => `
+        <li class="cart-row ${r.c.checked ? 'checked' : ''}">
+          <input type="checkbox" class="cart-check" data-cart-check="${r.c.id}" ${r.c.checked ? 'checked' : ''}>
+          <div class="cart-row-thumb">${r.photo ? `<img src="${r.photo}">` : (r.c.refType==='ingredient' ? '🥫' : '🧴')}</div>
+          <div class="row-main">
+            <div class="row-name">${escapeHtml(r.name)}</div>
+            <div class="row-sub"><span class="type-tag">${r.c.refType==='ingredient' ? 'ingrediente' : 'despensa'}</span></div>
+          </div>
+          <input type="number" class="cart-qty-input" min="0" step="any" value="${r.c.quantity}" data-cart-qty="${r.c.id}">
+          <span class="row-sub">${unitLabel(r.unit)}</span>
+          <span class="cart-row-cost">${r.cost !== null ? fmtCurrency(r.cost) : '—'}</span>
+          <button class="mini-btn" data-remove-cart="${r.c.id}" title="Remover">✕</button>
+        </li>
+      `).join('')}
+    </ul>
+    <div class="cart-footer-bar">
+      <div class="cart-total-block">
+        <div class="cart-total-line">Total estimado do carrinho: <strong>${fmtCurrency(totalAll)}</strong></div>
+        <div class="cart-total-line sub">Marcados para comprar agora: ${fmtCurrency(totalChecked)}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-ghost" id="cart-select-all">Marcar todos como comprados</button>
+        <button class="btn-primary" id="cart-checkout-btn">Finalizar compra (itens marcados)</button>
+      </div>
+    </div>
+  ` : `<div class="cart-section-title">Meu carrinho <span class="count">0</span></div><div class="empty-state"><div class="glyph">🛒</div><h3>Carrinho vazio</h3><p>Adicione itens a partir das sugestões acima.</p></div>`;
+
+  container.innerHTML = suggestionsHtml + cartHtml + renderPurchaseHistorySection();
+
+  container.querySelectorAll('[data-add-cart]').forEach(btn => {
+    btn.onclick = () => {
+      const [type, id] = btn.dataset.addCart.split(':');
+      const source = type==='ingredient' ? state.ingredients : state.despensaItems;
+      const item = source.find(i => i.id === id);
+      if(!item) return;
+      state.cart.push({ id: uid(), refType: type, refId: id, name: item.name, unit: item.unit, quantity: suggestedQty(item), checked: false });
+      saveCart();
+      renderCartView();
+      updateTabBadges();
+    };
+  });
+  container.querySelectorAll('[data-cart-check]').forEach(chk => {
+    chk.onchange = () => {
+      const entry = state.cart.find(c => c.id === chk.dataset.cartCheck);
+      if(entry){ entry.checked = chk.checked; saveCart(); renderCartView(); }
+    };
+  });
+  container.querySelectorAll('[data-cart-qty]').forEach(inp => {
+    inp.onchange = () => {
+      const entry = state.cart.find(c => c.id === inp.dataset.cartQty);
+      if(entry){ entry.quantity = parseFloat(inp.value) || 0; saveCart(); renderCartView(); }
+    };
+  });
+  container.querySelectorAll('[data-remove-cart]').forEach(btn => {
+    btn.onclick = () => {
+      state.cart = state.cart.filter(c => c.id !== btn.dataset.removeCart);
+      saveCart();
+      renderCartView();
+      updateTabBadges();
+    };
+  });
+  const selectAllBtn = document.getElementById('cart-select-all');
+  if(selectAllBtn) selectAllBtn.onclick = () => {
+    state.cart.forEach(c => c.checked = true);
+    saveCart();
+    renderCartView();
+  };
+  const checkoutBtn = document.getElementById('cart-checkout-btn');
+  if(checkoutBtn) checkoutBtn.onclick = () => {
+    const toProcess = state.cart.filter(c => c.checked);
+    if(!toProcess.length){ toast('Marque os itens que você comprou antes de finalizar', 'error'); return; }
+    let updated = 0;
+    toProcess.forEach(c => {
+      const source = c.refType==='ingredient' ? state.ingredients : state.despensaItems;
+      const idx = source.findIndex(i => i.id === c.refId);
+      if(idx >= 0){
+        source[idx].stockCurrent = (source[idx].stockCurrent || 0) + (c.quantity || 0);
+        logPurchase(c.refType, c.refId, source[idx].name, source[idx].unit, c.quantity || 0);
+        updated++;
+      }
+    });
+    state.cart = state.cart.filter(c => !c.checked);
+    saveIngredients();
+    saveDespensa();
+    saveCart();
+    saveHistory();
+    toast(`Estoque atualizado com ${updated} ite${updated===1?'m':'ns'} do carrinho`, 'success');
+    renderAll();
+  };
+
+  const historySelect = document.getElementById('history-month-select');
+  if(historySelect) historySelect.onchange = (e) => { historySelectedMonth = e.target.value; renderCartView(); };
+}
+
+/* ============================================================
+   EXPORT / IMPORT
+============================================================ */
+function exportData(){
+  const payload = {
+    schema: 'despensa-receitas',
+    version: 3,
+    exportedAt: new Date().toISOString(),
+    ingredients: state.ingredients,
+    recipes: state.recipes,
+    despensaItems: state.despensaItems,
+    cart: state.cart,
+    purchaseLog: state.purchaseLog
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `despensa-receitas-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast('Dados exportados', 'success');
+}
+
+function importData(file){
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try{
+      const payload = JSON.parse(e.target.result);
+      if(!payload.ingredients || !payload.recipes) throw new Error('formato inválido');
+      if(!confirm('Importar irá substituir todos os dados atuais. Continuar?')) return;
+      state.ingredients = payload.ingredients;
+      state.recipes = payload.recipes;
+      state.despensaItems = payload.despensaItems || [];
+      state.cart = payload.cart || [];
+      state.purchaseLog = payload.purchaseLog || {};
+      saveIngredients();
+      saveRecipes();
+      saveDespensa();
+      saveCart();
+      saveHistory();
+      toast('Dados importados com sucesso', 'success');
+      renderAll();
+    }catch(err){
+      toast('Arquivo inválido. Verifique o JSON exportado.', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+function renderAll(){
+  if(currentTab === 'ingredients') renderIngredientsView();
+  else if(currentTab === 'despensa') renderDespensaView();
+  else if(currentTab === 'recipes') renderRecipesView();
+  else if(currentTab === 'cart') renderCartView();
+  updateTabBadges();
+}
+
+function updateTabBadges(){
+  const lowIngCount = state.ingredients.filter(i => stockStatus(i)==='low').length;
+  const lowDespCount = state.despensaItems.filter(i => stockStatus(i)==='low').length;
+  const cartCount = state.cart.length;
+  document.getElementById('tab-btn-ingredients').innerHTML = 'Ingredientes' + (lowIngCount>0 ? `<span class="tab-badge">${lowIngCount}</span>` : '');
+  document.getElementById('tab-btn-despensa').innerHTML = 'Despensa' + (lowDespCount>0 ? `<span class="tab-badge">${lowDespCount}</span>` : '');
+  document.getElementById('tab-btn-cart').innerHTML = 'Carrinho de Compras' + (cartCount>0 ? `<span class="tab-badge">${cartCount}</span>` : '');
+}
+
+async function init(){
+  loadLocalState();
+  document.getElementById('tab-btn-ingredients').onclick = () => switchTab('ingredients');
+  document.getElementById('tab-btn-despensa').onclick = () => switchTab('despensa');
+  document.getElementById('tab-btn-recipes').onclick = () => switchTab('recipes');
+  document.getElementById('tab-btn-cart').onclick = () => switchTab('cart');
+  document.getElementById('btn-export').onclick = exportData;
+  document.getElementById('btn-import').onclick = () => document.getElementById('import-file-input').click();
+  document.getElementById('btn-sync-now').onclick = () => syncFromCloud(true);
+  document.getElementById('import-file-input').onchange = (e) => {
+    const file = e.target.files[0];
+    if(file) importData(file);
+    e.target.value = '';
+  };
+  renderAll();
+  await syncFromCloud(false);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>
