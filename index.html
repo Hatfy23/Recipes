@@ -762,6 +762,27 @@
 
   .row-name{overflow-wrap:anywhere;}
   @media (max-width:640px){ .cart-row .cart-row-thumb{display:none;} .cart-qty-input{width:56px;} }
+
+  /* ---------- TIPOS DE GASTO / RELATÓRIO DE COMPRAS ---------- */
+  .spend-tag{font-family:var(--font-display);font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-top:2px;}
+  .cart-paid-wrap{display:flex;align-items:center;gap:3px;font-family:var(--font-display);font-size:10px;color:var(--text-faint);}
+  .cart-paid-input{width:78px;background:var(--bg);border:1px solid var(--border-strong);border-radius:2px;color:var(--text);font-family:var(--font-display);font-size:12px;padding:6px;text-align:right;}
+  .cart-paid-input.edited{border-color:var(--accent);color:var(--gold-hi);}
+  .sp-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;align-items:center;}
+  .sp-row.sp-type{grid-template-columns:1fr 170px auto;}
+  .cl-row{display:grid;grid-template-columns:1fr 200px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);}
+  .cl-row select{background:var(--bg);border:1px solid var(--border-strong);border-radius:2px;color:var(--text);font-family:var(--font-body);font-size:15px;padding:6px 8px;}
+  .cl-name{font-size:15.5px;}
+  .cl-name small{display:block;font-family:var(--font-display);font-size:8.5px;letter-spacing:1px;color:var(--text-faint);text-transform:uppercase;}
+  .cl-head{font-family:var(--font-display);font-size:10px;letter-spacing:1.4px;color:var(--accent);text-transform:uppercase;margin:14px 0 2px 0;}
+  .rp-bar{height:7px;background:var(--bg);border:1px solid var(--border);border-radius:3px;overflow:hidden;margin-top:3px;}
+  .rp-bar>div{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));}
+  .rp-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:baseline;margin-top:9px;}
+  .rp-row .nm{font-family:var(--font-body);font-size:16px;}
+  .rp-row .vl{font-family:var(--font-display);font-size:12px;color:var(--gold-hi);}
+  .rp-row .pc{font-family:var(--font-body);font-size:14px;color:var(--text-faint);min-width:44px;text-align:right;}
+  .rp-title{font-family:var(--font-display);font-size:10px;letter-spacing:1.4px;color:var(--accent);text-transform:uppercase;margin:18px 0 2px 0;}
+  @media (max-width:640px){ .sp-row.sp-type{grid-template-columns:1fr 1fr auto;} .cl-row{grid-template-columns:1fr;gap:4px;} }
 </style>
 </head>
 <body>
@@ -844,6 +865,7 @@ async function syncFromCloud(showToast){
       state.purchaseLog = data.data.purchaseLog || {};
       state.mealPlan = data.data.mealPlan || [];
       state.calorieGoal = normGoal(data.data.calorieGoal);
+      state.spend = normSpend(data.data.spend);
       persistLocal();
       renderAll();
       setSyncStatus('synced');
@@ -865,7 +887,7 @@ async function pushToCloud(){
   try{
     const { error } = await sb.from(SB_TABLE).upsert({
       id: SB_ROW_ID,
-      data: { ingredients: state.ingredients, recipes: state.recipes, despensaItems: state.despensaItems, cart: state.cart, purchaseLog: state.purchaseLog, mealPlan: state.mealPlan, calorieGoal: state.calorieGoal },
+      data: { ingredients: state.ingredients, recipes: state.recipes, despensaItems: state.despensaItems, cart: state.cart, purchaseLog: state.purchaseLog, mealPlan: state.mealPlan, calorieGoal: state.calorieGoal, spend: state.spend },
       updated_at: new Date().toISOString()
     });
     if(error) throw error;
@@ -887,14 +909,14 @@ function schedulePush(){
 /* ============================================================
    STATE & STORAGE
 ============================================================ */
-const STORAGE_KEYS = { ing: 'despensa_ingredients_v1', rec: 'despensa_recipes_v1', desp: 'despensa_household_v1', cart: 'despensa_cart_v1', hist: 'despensa_purchase_log_v1', plan: 'despensa_meal_plan_v1', goal: 'despensa_calorie_goal_v1' };
+const STORAGE_KEYS = { ing: 'despensa_ingredients_v1', rec: 'despensa_recipes_v1', desp: 'despensa_household_v1', cart: 'despensa_cart_v1', hist: 'despensa_purchase_log_v1', plan: 'despensa_meal_plan_v1', goal: 'despensa_calorie_goal_v1', spend: 'despensa_spend_v1' };
 const UNIT_LABEL = { g: 'g', ml: 'ml', un: 'un' };
 const CATEGORY_SUGGESTIONS = ['Grãos e Cereais','Laticínios','Carnes e Ovos','Vegetais','Frutas','Temperos e Molhos','Bebidas','Enlatados','Congelados','Padaria','Outros'];
 const DESPENSA_UNIT_SUGGESTIONS = ['un','rolo','tubo','pacote','frasco','caixa','barra','litro','kg'];
 const DESPENSA_CATEGORY_SUGGESTIONS = ['Higiene Pessoal','Limpeza','Banheiro','Cozinha (não alimento)','Papelaria','Pet','Outros'];
 const MONTH_NAMES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-let state = { ingredients: [], recipes: [], despensaItems: [], cart: [], purchaseLog: {}, mealPlan: [], calorieGoal: { history: [], overrides: {} } };
+let state = { ingredients: [], recipes: [], despensaItems: [], cart: [], purchaseLog: {}, mealPlan: [], calorieGoal: { history: [], overrides: {} }, spend: defaultSpend() };
 let currentTab = 'ingredients';
 let ingSearch = '';
 let ingCategoryFilter = '';
@@ -915,6 +937,7 @@ function loadLocalState(){
     const rawHist = localStorage.getItem(STORAGE_KEYS.hist);
     const rawPlan = localStorage.getItem(STORAGE_KEYS.plan);
     const rawGoal = localStorage.getItem(STORAGE_KEYS.goal);
+    const rawSpend = localStorage.getItem(STORAGE_KEYS.spend);
     state.ingredients = rawIng ? JSON.parse(rawIng) : [];
     state.recipes = rawRec ? JSON.parse(rawRec) : [];
     state.despensaItems = rawDesp ? JSON.parse(rawDesp) : [];
@@ -922,9 +945,10 @@ function loadLocalState(){
     state.purchaseLog = rawHist ? JSON.parse(rawHist) : {};
     state.mealPlan = rawPlan ? JSON.parse(rawPlan) : [];
     state.calorieGoal = normGoal(rawGoal ? JSON.parse(rawGoal) : null);
+    state.spend = normSpend(rawSpend ? JSON.parse(rawSpend) : null);
   }catch(e){
     console.error('Falha ao carregar dados salvos localmente', e);
-    state = { ingredients: [], recipes: [], despensaItems: [], cart: [], purchaseLog: {}, mealPlan: [], calorieGoal: { history: [], overrides: {} } };
+    state = { ingredients: [], recipes: [], despensaItems: [], cart: [], purchaseLog: {}, mealPlan: [], calorieGoal: { history: [], overrides: {} }, spend: defaultSpend() };
   }
 }
 function persistLocal(){
@@ -936,6 +960,7 @@ function persistLocal(){
     localStorage.setItem(STORAGE_KEYS.hist, JSON.stringify(state.purchaseLog));
     localStorage.setItem(STORAGE_KEYS.plan, JSON.stringify(state.mealPlan));
     localStorage.setItem(STORAGE_KEYS.goal, JSON.stringify(state.calorieGoal));
+    localStorage.setItem(STORAGE_KEYS.spend, JSON.stringify(state.spend));
   }catch(e){ console.error('Falha ao salvar localmente', e); }
 }
 // Salva só o que mudou, uma única vez, fora do caminho do clique (UI responde na hora)
@@ -943,7 +968,7 @@ const dirtyKeys = new Set();
 let flushScheduled = false;
 function flushLocal(){
   flushScheduled = false;
-  const fieldByKey = { ing:'ingredients', rec:'recipes', desp:'despensaItems', cart:'cart', hist:'purchaseLog', plan:'mealPlan', goal:'calorieGoal' };
+  const fieldByKey = { ing:'ingredients', rec:'recipes', desp:'despensaItems', cart:'cart', hist:'purchaseLog', plan:'mealPlan', goal:'calorieGoal', spend:'spend' };
   dirtyKeys.forEach(k => {
     try{ localStorage.setItem(STORAGE_KEYS[k], JSON.stringify(state[fieldByKey[k]])); }
     catch(e){ console.error('Falha ao salvar localmente', e); }
@@ -962,6 +987,7 @@ function saveCart(){ markDirty('cart'); }
 function saveHistory(){ markDirty('hist'); }
 function saveMealPlan(){ markDirty('plan'); }
 function saveGoal(){ markDirty('goal'); }
+function saveSpend(){ markDirty('spend'); }
 function normGoal(g){
   g = g || {};
   const ov = {};
@@ -988,15 +1014,17 @@ function monthLabel(key){
   const [y,m] = key.split('-');
   return `${MONTH_NAMES_PT[parseInt(m,10)-1]} de ${y}`;
 }
-function logPurchase(refType, refId, name, unit, qty){
+function logPurchase(refType, refId, name, unit, qty, spent, typeId){
   const key = monthKeyNow();
   if(!state.purchaseLog[key]) state.purchaseLog[key] = {};
-  const itemKey = refType + ':' + refId;
+  const itemKey = refType + ':' + refId + ':' + (typeId || 'none');
   const bucket = state.purchaseLog[key];
   if(!bucket[itemKey]) bucket[itemKey] = { name, unit, qty: 0 };
   bucket[itemKey].name = name;
   bucket[itemKey].unit = unit;
   bucket[itemKey].qty = Math.round((bucket[itemKey].qty + qty) * 100) / 100;
+  bucket[itemKey].typeId = typeId || '';
+  if(typeof spent === 'number') bucket[itemKey].spent = Math.round(((bucket[itemKey].spent || 0) + spent) * 100) / 100;
 }
 
 function uid(){
@@ -1160,6 +1188,7 @@ function renderIngredientsView(){
         ${categories.map(c=>`<option value="${escapeHtml(c)}" ${c===ingCategoryFilter?'selected':''}>${escapeHtml(c)}</option>`).join('')}
       </select>
       <button class="toggle-chip ${ingLowStockOnly?'active':''}" id="ing-lowstock-toggle">⚠ Estoque baixo</button>
+      <button class="btn-ghost" id="btn-spend-ing" title="Tipos de gasto e classificação dos itens">🏷 Tipos</button>
       <button class="btn-primary" id="btn-add-ingredient">+ Novo ingrediente</button>
     </div>
     ${cardsHtml}
@@ -1169,6 +1198,7 @@ function renderIngredientsView(){
   document.getElementById('ing-category-filter').onchange = (e)=>{ ingCategoryFilter = e.target.value; renderIngredientsView(); };
   document.getElementById('ing-lowstock-toggle').onclick = ()=>{ ingLowStockOnly = !ingLowStockOnly; renderIngredientsView(); };
   document.getElementById('btn-add-ingredient').onclick = ()=> openIngredientForm();
+  document.getElementById('btn-spend-ing').onclick = ()=> openSpendManager();
 
   container.querySelectorAll('[data-edit-ing]').forEach(btn=>{
     btn.onclick = (e)=>{ e.stopPropagation(); openIngredientForm(btn.dataset.editIng); };
@@ -1204,6 +1234,7 @@ function renderIngredientCard(ing){
           <div class="card-title">${escapeHtml(ing.name)}</div>
           ${ing.category ? `<div class="card-cat">${escapeHtml(ing.category)}</div>` : ''}
           ${ing.consumable ? `<div class="consumable-tag">consumível</div>` : ''}
+          ${spendTagHtml(ing)}
         </div>
         <div class="card-actions">
           <button class="mini-btn" data-cart-add-ing="${ing.id}" title="Adicionar ao carrinho">🛒</button>
@@ -1284,6 +1315,11 @@ function openIngredientForm(id){
             <input type="text" id="ing-category" list="category-list" value="${editing ? escapeHtml(editing.category||'') : ''}" placeholder="Ex: Grãos e Cereais">
             <datalist id="category-list">${CATEGORY_SUGGESTIONS.map(c=>`<option value="${c}">`).join('')}</datalist>
           </div>
+        </div>
+
+        <div class="field">
+          <label>Tipo de gasto (para os relatórios)</label>
+          <select id="ing-spend-type">${spendTypeOptionsHtml(editing ? editing.spendTypeId : '')}</select>
         </div>
 
         <div class="field">
@@ -1431,6 +1467,7 @@ function openIngredientForm(id){
         unit: unitSelect.value,
         portionSize,
         portionName: document.getElementById('ing-portion-name').value.trim(),
+        spendTypeId: document.getElementById('ing-spend-type').value,
         nutriBasis,
         consumable: document.getElementById('ing-consumable').checked,
         step: parseFloat(document.getElementById('ing-step').value) > 0 ? parseFloat(document.getElementById('ing-step').value) : 1,
@@ -1519,6 +1556,7 @@ function renderDespensaView(){
         ${categories.map(c=>`<option value="${escapeHtml(c)}" ${c===despCategoryFilter?'selected':''}>${escapeHtml(c)}</option>`).join('')}
       </select>
       <button class="toggle-chip ${despLowStockOnly?'active':''}" id="desp-lowstock-toggle">⚠ Estoque baixo</button>
+      <button class="btn-ghost" id="btn-spend-desp" title="Tipos de gasto e classificação dos itens">🏷 Tipos</button>
       <button class="btn-primary" id="btn-add-despensa">+ Novo item</button>
     </div>
     ${cardsHtml}
@@ -1528,6 +1566,7 @@ function renderDespensaView(){
   document.getElementById('desp-category-filter').onchange = (e)=>{ despCategoryFilter = e.target.value; renderDespensaView(); };
   document.getElementById('desp-lowstock-toggle').onclick = ()=>{ despLowStockOnly = !despLowStockOnly; renderDespensaView(); };
   document.getElementById('btn-add-despensa').onclick = ()=> openDespensaForm();
+  document.getElementById('btn-spend-desp').onclick = ()=> openSpendManager();
 
   container.querySelectorAll('[data-edit-desp]').forEach(btn=>{
     btn.onclick = (e)=>{ e.stopPropagation(); openDespensaForm(btn.dataset.editDesp); };
@@ -1562,6 +1601,7 @@ function renderDespensaCard(item){
         <div>
           <div class="card-title">${escapeHtml(item.name)}</div>
           ${item.category ? `<div class="card-cat">${escapeHtml(item.category)}</div>` : ''}
+          ${spendTagHtml(item)}
         </div>
         <div class="card-actions">
           <button class="mini-btn" data-cart-add-desp="${item.id}" title="Adicionar ao carrinho">🛒</button>
@@ -1624,6 +1664,11 @@ function openDespensaForm(id){
             <input type="text" id="desp-category" list="desp-category-list" value="${editing ? escapeHtml(editing.category||'') : ''}" placeholder="Ex: Higiene Pessoal">
             <datalist id="desp-category-list">${DESPENSA_CATEGORY_SUGGESTIONS.map(c=>`<option value="${c}">`).join('')}</datalist>
           </div>
+        </div>
+
+        <div class="field">
+          <label>Tipo de gasto (para os relatórios)</label>
+          <select id="desp-spend-type">${spendTypeOptionsHtml(editing ? editing.spendTypeId : 't_casa')}</select>
         </div>
 
         <div class="field">
@@ -1690,6 +1735,7 @@ function openDespensaForm(id){
         category: document.getElementById('desp-category').value.trim(),
         photo: despPhotoData,
         unit: document.getElementById('desp-unit').value.trim() || 'un',
+        spendTypeId: document.getElementById('desp-spend-type').value,
         step: parseFloat(document.getElementById('desp-step').value) > 0 ? parseFloat(document.getElementById('desp-step').value) : 1,
         stockMin: parseFloat(document.getElementById('desp-stock-min').value) || 0,
         stockMax: parseFloat(document.getElementById('desp-stock-max').value) || 0,
@@ -2150,6 +2196,9 @@ function renderPurchaseHistorySection(){
       <select class="filter-select" id="history-month-select">
         ${months.map(m => `<option value="${m}" ${m===selected?'selected':''}>${monthLabel(m)}</option>`).join('')}
       </select>
+      <span class="hint" style="margin:0 auto 0 4px;">${rows.some(r => typeof r.spent === 'number') ? 'Total do mês: ' + fmtCurrency(rows.reduce((a,r) => a + (r.spent || 0), 0)) : ''}</span>
+      <button class="btn-secondary" id="btn-purchase-report">📊 Relatório de compras</button>
+      <button class="btn-ghost" id="btn-spend-types-cart">🏷 Tipos</button>
     </div>
     <ul class="cart-list">
       ${rows.length ? rows.map(r => `
@@ -2157,7 +2206,7 @@ function renderPurchaseHistorySection(){
           <div class="row-main">
             <div class="row-name">${escapeHtml(r.name)}</div>
           </div>
-          <span class="history-qty">${fmtNum(r.qty)} ${unitLabel(r.unit)}</span>
+          <span class="history-qty">${fmtNum(r.qty)} ${unitLabel(r.unit)}${typeof r.spent === 'number' ? ' · ' + fmtCurrency(r.spent) : ''}</span>
         </li>
       `).join('') : `<li class="cart-row"><span class="hint">Nenhum item comprado nesse mês.</span></li>`}
     </ul>
@@ -2195,8 +2244,9 @@ function renderCartView(){
     return { c, live, name, unit, photo, cost };
   });
 
-  const totalAll = cartRows.reduce((s,r)=> s + (r.cost || 0), 0);
-  const totalChecked = cartRows.filter(r=>r.c.checked).reduce((s,r)=> s + (r.cost || 0), 0);
+  const eff = (r) => (r.c.paid != null) ? r.c.paid : (r.cost || 0);
+  const totalAll = cartRows.reduce((s,r)=> s + eff(r), 0);
+  const totalChecked = cartRows.filter(r=>r.c.checked).reduce((s,r)=> s + eff(r), 0);
 
   const cartHtml = cartRows.length ? `
     <div class="cart-section-title">Meu carrinho <span class="count">${cartRows.length}</span></div>
@@ -2211,14 +2261,14 @@ function renderCartView(){
           </div>
           <input type="number" class="cart-qty-input" min="0" step="any" value="${r.c.quantity}" data-cart-qty="${r.c.id}">
           <span class="row-sub">${unitLabel(r.unit)}</span>
-          <span class="cart-row-cost">${r.cost !== null ? fmtCurrency(r.cost) : '—'}</span>
+          <label class="cart-paid-wrap" title="Valor desta linha. Edite para o valor pago de verdade (vale só neste check-out; o preço cadastrado não muda)."><span>R$</span><input type="number" min="0" step="0.01" class="cart-paid-input ${r.c.paid != null ? 'edited' : ''}" value="${(r.c.paid != null ? r.c.paid : (r.cost || 0)).toFixed(2)}" data-cart-paid="${r.c.id}"></label>
           <button class="mini-btn" data-remove-cart="${r.c.id}" title="Remover">✕</button>
         </li>
       `).join('')}
     </ul>
     <div class="cart-footer-bar">
       <div class="cart-total-block">
-        <div class="cart-total-line">Total estimado do carrinho: <strong>${fmtCurrency(totalAll)}</strong></div>
+        <div class="cart-total-line">Total do carrinho: <strong>${fmtCurrency(totalAll)}</strong></div>
         <div class="cart-total-line sub">Marcados para comprar agora: ${fmtCurrency(totalChecked)}</div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -2254,6 +2304,23 @@ function renderCartView(){
       if(entry){ entry.quantity = parseFloat(inp.value) || 0; saveCart(); renderCartView(); }
     };
   });
+  container.querySelectorAll('[data-cart-paid]').forEach(inp => {
+    inp.onchange = () => {
+      const entry = state.cart.find(c => c.id === inp.dataset.cartPaid);
+      if(!entry) return;
+      const raw = inp.value.trim();
+      if(raw === ''){ delete entry.paid; }
+      else {
+        const v = parseFloat(raw);
+        if(isNaN(v) || v < 0){ toast('Valor inválido', 'error'); renderCartView(); return; }
+        const src = entry.refType === 'ingredient' ? state.ingredients : state.despensaItems;
+        const live = src.find(i => i.id === entry.refId);
+        const est = live ? costForQuantity(live, entry.quantity || 0) : null;
+        if(est !== null && Math.abs(est - v) < 0.005) delete entry.paid; else entry.paid = Math.round(v * 100) / 100;
+      }
+      saveCart(); renderCartView();
+    };
+  });
   container.querySelectorAll('[data-remove-cart]').forEach(btn => {
     btn.onclick = () => {
       state.cart = state.cart.filter(c => c.id !== btn.dataset.removeCart);
@@ -2278,7 +2345,9 @@ function renderCartView(){
       const idx = source.findIndex(i => i.id === c.refId);
       if(idx >= 0){
         source[idx].stockCurrent = (source[idx].stockCurrent || 0) + (c.quantity || 0);
-        logPurchase(c.refType, c.refId, source[idx].name, source[idx].unit, c.quantity || 0);
+        const estCost = costForQuantity(source[idx], c.quantity || 0);
+        const spentNow = (c.paid !== undefined && c.paid !== null) ? c.paid : estCost;
+        logPurchase(c.refType, c.refId, source[idx].name, source[idx].unit, c.quantity || 0, spentNow, source[idx].spendTypeId || '');
         updated++;
       }
     });
@@ -2293,6 +2362,8 @@ function renderCartView(){
 
   const historySelect = document.getElementById('history-month-select');
   if(historySelect) historySelect.onchange = (e) => { historySelectedMonth = e.target.value; renderCartView(); };
+  const prb = document.getElementById('btn-purchase-report'); if(prb) prb.onclick = () => openPurchaseReport();
+  const stb = document.getElementById('btn-spend-types-cart'); if(stb) stb.onclick = () => openSpendManager();
 }
 
 /* ============================================================
@@ -3317,6 +3388,287 @@ function openConsumeDialog(id){
   });
 }
 
+/* ---------- Tipos de gasto, classificação de itens e relatório de compras ---------- */
+function defaultSpend(){
+  return {
+    purposes: [ { id:'p_essencial', name:'Essencial' }, { id:'p_praticidade', name:'Praticidade' }, { id:'p_prazer', name:'Prazer' } ],
+    types: [
+      { id:'t_ingredientes', name:'Ingredientes', purposeId:'p_essencial' },
+      { id:'t_frutas', name:'Frutas', purposeId:'p_essencial' },
+      { id:'t_casa', name:'Casa e higiene', purposeId:'p_essencial' },
+      { id:'t_congelados', name:'Congelados e comidas prontas', purposeId:'p_praticidade' },
+      { id:'t_sobremesas', name:'Sobremesas', purposeId:'p_prazer' },
+      { id:'t_snacks', name:'Snacks', purposeId:'p_prazer' },
+      { id:'t_bebidas', name:'Bebidas', purposeId:'p_prazer' },
+      { id:'t_alcool', name:'Bebidas alcoólicas', purposeId:'p_prazer' }
+    ]
+  };
+}
+function normSpend(x){ return (x && Array.isArray(x.types) && Array.isArray(x.purposes)) ? x : defaultSpend(); }
+function spendTypeById(id){ return state.spend.types.find(t => t.id === id) || null; }
+function spendPurposeOf(t){ return t ? (state.spend.purposes.find(p => p.id === t.purposeId) || null) : null; }
+function spendTypeOptionsHtml(selectedId){
+  let h = '<option value="">Sem tipo</option>';
+  state.spend.purposes.forEach(p => {
+    const ts = state.spend.types.filter(t => t.purposeId === p.id);
+    if(!ts.length) return;
+    h += `<optgroup label="${escapeHtml(p.name)}">` + ts.map(t => `<option value="${t.id}" ${t.id === selectedId ? 'selected' : ''}>${escapeHtml(t.name)}</option>`).join('') + '</optgroup>';
+  });
+  return h;
+}
+function spendTagHtml(item){
+  const t = spendTypeById(item.spendTypeId);
+  return t ? `<div class="spend-tag">🏷 ${escapeHtml(t.name)}</div>` : '';
+}
+
+function openSpendManager(){
+  const sp = state.spend;
+  const purposeOpts = (sel) => sp.purposes.map(p => `<option value="${p.id}" ${p.id === sel ? 'selected' : ''}>${escapeHtml(p.name)}</option>`).join('');
+  const html = `
+    <div class="modal-header">
+      <h2>Tipos de gasto</h2>
+      <button class="modal-close" id="close-modal-btn">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="hint" style="margin-bottom:14px;">Os <strong>tipos</strong> agrupam os gastos nos relatórios (ex.: Frutas, Congelados) e as <strong>finalidades</strong> agrupam os tipos (ex.: Essencial, Praticidade, Prazer). Isso só afeta os relatórios, não o estoque.</div>
+      <div class="field">
+        <label>Finalidades</label>
+        ${sp.purposes.map(p => `<div class="sp-row"><input type="text" value="${escapeHtml(p.name)}" data-sp-purpose="${p.id}"><button class="mini-btn" data-sp-del-purpose="${p.id}" title="Excluir">✕</button></div>`).join('')}
+        <div class="sp-row"><input type="text" id="sp-new-purpose" placeholder="Nova finalidade"><button class="btn-ghost" id="sp-add-purpose">Adicionar</button></div>
+      </div>
+      <div class="field">
+        <label>Tipos</label>
+        ${sp.types.map(t => `<div class="sp-row sp-type"><input type="text" value="${escapeHtml(t.name)}" data-sp-type="${t.id}"><select data-sp-type-purpose="${t.id}">${purposeOpts(t.purposeId)}</select><button class="mini-btn" data-sp-del-type="${t.id}" title="Excluir">✕</button></div>`).join('')}
+        <div class="sp-row sp-type"><input type="text" id="sp-new-type" placeholder="Novo tipo"><select id="sp-new-type-purpose">${purposeOpts('')}</select><button class="btn-ghost" id="sp-add-type">Adicionar</button></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="sp-classify-btn" style="margin-right:auto;">Classificar itens →</button>
+      <button class="btn-secondary" id="sp-close-btn">Fechar</button>
+    </div>
+  `;
+  openModal(html, () => {
+    const $ = (x) => document.getElementById(x);
+    $('close-modal-btn').onclick = closeModal;
+    $('sp-close-btn').onclick = closeModal;
+    $('sp-classify-btn').onclick = () => { closeModal(); openClassifyItems(); };
+    document.querySelectorAll('[data-sp-purpose]').forEach(inp => {
+      inp.onchange = () => {
+        const p = sp.purposes.find(x => x.id === inp.dataset.spPurpose); const v = inp.value.trim();
+        if(!p) return; if(!v){ inp.value = p.name; return; }
+        p.name = v; saveSpend();
+      };
+    });
+    document.querySelectorAll('[data-sp-type]').forEach(inp => {
+      inp.onchange = () => {
+        const t = spendTypeById(inp.dataset.spType); const v = inp.value.trim();
+        if(!t) return; if(!v){ inp.value = t.name; return; }
+        t.name = v; saveSpend(); renderAll();
+      };
+    });
+    document.querySelectorAll('[data-sp-type-purpose]').forEach(sel => {
+      sel.onchange = () => { const t = spendTypeById(sel.dataset.spTypePurpose); if(t){ t.purposeId = sel.value; saveSpend(); } };
+    });
+    document.querySelectorAll('[data-sp-del-purpose]').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.spDelPurpose;
+        if(sp.types.some(t => t.purposeId === id)){ toast('Mova ou exclua os tipos dessa finalidade antes', 'error'); return; }
+        sp.purposes = sp.purposes.filter(p => p.id !== id); saveSpend(); openSpendManager();
+      };
+    });
+    document.querySelectorAll('[data-sp-del-type]').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.spDelType; const t = spendTypeById(id); if(!t) return;
+        const users = [...state.ingredients, ...state.despensaItems].filter(i => i.spendTypeId === id);
+        if(!confirm(`Excluir o tipo "${t.name}"?${users.length ? `\n\n${users.length} item(ns) vão ficar sem tipo. O histórico de compras mantém os valores, como "Sem tipo".` : ''}`)) return;
+        users.forEach(i => { i.spendTypeId = ''; });
+        sp.types = sp.types.filter(x => x.id !== id);
+        saveSpend(); saveIngredients(); saveDespensa(); renderAll(); openSpendManager();
+      };
+    });
+    $('sp-add-purpose').onclick = () => {
+      const v = $('sp-new-purpose').value.trim(); if(!v){ toast('Digite o nome da finalidade', 'error'); return; }
+      sp.purposes.push({ id: 'p_' + uid().slice(0, 8), name: v }); saveSpend(); openSpendManager();
+    };
+    $('sp-add-type').onclick = () => {
+      const v = $('sp-new-type').value.trim(); const pid = $('sp-new-type-purpose').value;
+      if(!v){ toast('Digite o nome do tipo', 'error'); return; }
+      if(!pid){ toast('Crie uma finalidade primeiro', 'error'); return; }
+      sp.types.push({ id: 't_' + uid().slice(0, 8), name: v, purposeId: pid }); saveSpend(); openSpendManager();
+    };
+  });
+}
+
+function openClassifyItems(){
+  let onlyEmpty = false;
+  const html = `
+    <div class="modal-header">
+      <h2>Classificar itens</h2>
+      <button class="modal-close" id="close-modal-btn">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="checkbox-field" style="margin-bottom:6px;"><input type="checkbox" id="cl-only"><label for="cl-only">Mostrar só os sem tipo</label></div>
+      <div class="hint" id="cl-count" style="margin-bottom:6px;"></div>
+      <div id="cl-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="cl-back-btn" style="margin-right:auto;">← Tipos</button>
+      <button class="btn-secondary" id="cl-done-btn">Concluir</button>
+    </div>
+  `;
+  openModal(html, () => {
+    const $ = (x) => document.getElementById(x);
+    const all = () => [
+      ...state.ingredients.map(i => ({ kind: 'ing', item: i })),
+      ...state.despensaItems.map(i => ({ kind: 'desp', item: i }))
+    ];
+    const count = () => { const n = all().filter(x => !x.item.spendTypeId).length; $('cl-count').textContent = n ? `${n} item(ns) sem tipo.` : 'Todos os itens estão classificados.'; };
+    const draw = () => {
+      const row = (x) => `<div class="cl-row"><div class="cl-name">${escapeHtml(x.item.name)}${x.item.category ? `<small>${escapeHtml(x.item.category)}</small>` : ''}</div><select data-cl="${x.kind}:${x.item.id}">${spendTypeOptionsHtml(x.item.spendTypeId)}</select></div>`;
+      const sec = (title, kind) => {
+        const list = all().filter(x => x.kind === kind && (!onlyEmpty || !x.item.spendTypeId)).sort((a, b) => a.item.name.localeCompare(b.item.name, 'pt-BR'));
+        return list.length ? `<div class="cl-head">${title}</div>` + list.map(row).join('') : '';
+      };
+      $('cl-list').innerHTML = (sec('Ingredientes', 'ing') + sec('Despensa', 'desp')) || '<p class="hint">Nada para classificar.</p>';
+      $('cl-list').querySelectorAll('[data-cl]').forEach(sel => {
+        sel.onchange = () => {
+          const [kind, id] = sel.dataset.cl.split(':');
+          const it = (kind === 'ing' ? state.ingredients : state.despensaItems).find(i => i.id === id);
+          if(!it) return;
+          it.spendTypeId = sel.value;
+          if(kind === 'ing') saveIngredients(); else saveDespensa();
+          count(); renderAll();
+        };
+      });
+      count();
+    };
+    $('close-modal-btn').onclick = closeModal;
+    $('cl-done-btn').onclick = closeModal;
+    $('cl-back-btn').onclick = () => { closeModal(); openSpendManager(); };
+    $('cl-only').onchange = () => { onlyEmpty = $('cl-only').checked; draw(); };
+    draw();
+  });
+}
+
+function buildPurchaseReport(sel){
+  const months = sel === 'all' ? Object.keys(state.purchaseLog).sort() : [sel];
+  const items = [];
+  months.forEach(m => {
+    const b = state.purchaseLog[m] || {};
+    Object.keys(b).forEach(k => {
+      const e = b[k];
+      items.push({ month: m, name: e.name, unit: e.unit, qty: e.qty, spent: (typeof e.spent === 'number') ? e.spent : null, typeId: e.typeId || '' });
+    });
+  });
+  const byType = new Map(), byPurpose = new Map();
+  let total = 0, noValue = 0;
+  items.forEach(it => {
+    if(it.spent === null){ noValue++; return; }
+    total += it.spent;
+    const t = spendTypeById(it.typeId);
+    const p = spendPurposeOf(t);
+    const tk = t ? t.id : '';
+    if(!byType.has(tk)) byType.set(tk, { name: t ? t.name : 'Sem tipo', purpose: p ? p.name : '—', spent: 0, count: 0 });
+    const ta = byType.get(tk); ta.spent += it.spent; ta.count++;
+    const pk = p ? p.id : '';
+    if(!byPurpose.has(pk)) byPurpose.set(pk, { name: p ? p.name : 'Sem finalidade', spent: 0 });
+    byPurpose.get(pk).spent += it.spent;
+  });
+  const byDesc = (a, b) => b.spent - a.spent;
+  return {
+    items, total, noValue,
+    types: [...byType.values()].sort(byDesc),
+    purposes: [...byPurpose.values()].sort(byDesc),
+    top: items.filter(i => i.spent !== null).sort(byDesc).slice(0, 8)
+  };
+}
+
+function purchaseReportCsv(rep, label){
+  const q = (v) => { const t = (v === null || v === undefined) ? '' : String(v); return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const n = (v) => (v === null || v === undefined) ? '' : String(Math.round(v * 100) / 100).replace('.', ',');
+  const pct = (v) => rep.total > 0 ? n(v / rep.total * 100) + '%' : '';
+  const L = [];
+  L.push(['Relatório de compras', label].map(q).join(';'));
+  L.push('');
+  L.push(['Mês', 'Item', 'Tipo', 'Finalidade', 'Quantidade', 'Unidade', 'Valor (R$)'].map(q).join(';'));
+  [...rep.items].sort((a, b) => a.month.localeCompare(b.month) || a.name.localeCompare(b.name, 'pt-BR')).forEach(it => {
+    const t = spendTypeById(it.typeId); const p = spendPurposeOf(t);
+    L.push([monthLabel(it.month), it.name, t ? t.name : 'Sem tipo', p ? p.name : '', n(it.qty), it.unit, it.spent === null ? 'sem valor registrado' : n(it.spent)].map(q).join(';'));
+  });
+  L.push('');
+  L.push(['RESUMO POR FINALIDADE', 'Valor (R$)', '% do total'].map(q).join(';'));
+  rep.purposes.forEach(p => L.push([p.name, n(p.spent), pct(p.spent)].map(q).join(';')));
+  L.push('');
+  L.push(['RESUMO POR TIPO', 'Finalidade', 'Valor (R$)', '% do total'].map(q).join(';'));
+  rep.types.forEach(t => L.push([t.name, t.purpose, n(t.spent), pct(t.spent)].map(q).join(';')));
+  L.push('');
+  L.push(['TOTAL GASTO (R$)', n(rep.total)].map(q).join(';'));
+  if(rep.noValue) L.push(['Observação', rep.noValue + ' item(ns) de compras antigas sem valor registrado ficaram fora do total'].map(q).join(';'));
+  return '\ufeff' + L.join('\r\n');
+}
+
+function openPurchaseReport(){
+  const months = Object.keys(state.purchaseLog).sort().reverse();
+  if(!months.length){ toast('Ainda não há compras registradas. Finalize um carrinho primeiro.', 'error'); return; }
+  const html = `
+    <div class="modal-header">
+      <h2>Relatório de compras</h2>
+      <button class="modal-close" id="close-modal-btn">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="report-controls">
+        <select class="filter-select" id="pr-month">
+          <option value="all">Todos os meses</option>
+          ${months.map(m => `<option value="${m}" ${m === months[0] ? 'selected' : ''}>${monthLabel(m)}</option>`).join('')}
+        </select>
+      </div>
+      <div id="pr-body"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" id="pr-types-btn" style="margin-right:auto;">🏷 Tipos</button>
+      <button class="btn-secondary" id="pr-close-btn">Fechar</button>
+      <button class="btn-primary" id="pr-csv-btn">Baixar CSV</button>
+    </div>
+  `;
+  openModal(html, () => {
+    const $ = (x) => document.getElementById(x);
+    let current = null, label = '';
+    const refresh = () => {
+      const sel = $('pr-month').value;
+      label = sel === 'all' ? 'Todos os meses' : monthLabel(sel);
+      current = buildPurchaseReport(sel);
+      const r = current;
+      const pct = (v) => r.total > 0 ? Math.round(v / r.total * 100) : 0;
+      const bar = (v) => `<div class="rp-bar"><div style="width:${pct(v)}%;"></div></div>`;
+      const semTipo = r.types.some(t => t.name === 'Sem tipo');
+      $('pr-body').innerHTML = `
+        <div class="report-hero">
+          <div class="lbl">Total gasto · ${escapeHtml(label)}</div>
+          <div class="big">${fmtCurrency(r.total)}</div>
+          <div class="sub">${r.items.length - r.noValue} item(ns) com valor registrado</div>
+        </div>
+        <div class="rp-title">Por finalidade</div>
+        ${r.purposes.length ? r.purposes.map(p => `<div><div class="rp-row"><span class="nm">${escapeHtml(p.name)}</span><span class="vl">${fmtCurrency(p.spent)}</span><span class="pc">${pct(p.spent)}%</span></div>${bar(p.spent)}</div>`).join('') : '<p class="hint">Sem valores neste período.</p>'}
+        <div class="rp-title">Por tipo</div>
+        ${r.types.length ? `<div class="report-table-wrap"><table class="report-table" style="min-width:0;"><thead><tr><th>Tipo</th><th>Finalidade</th><th>Itens</th><th>Valor</th><th>%</th></tr></thead><tbody>
+          ${r.types.map(t => `<tr><td>${escapeHtml(t.name)}</td><td style="text-align:left;">${escapeHtml(t.purpose)}</td><td>${t.count}</td><td>${fmtCurrency(t.spent)}</td><td>${pct(t.spent)}%</td></tr>`).join('')}
+        </tbody></table></div>` : ''}
+        ${r.top.length ? `<div class="rp-title">Maiores gastos</div>${r.top.map(i => `<div class="rp-row"><span class="nm">${escapeHtml(i.name)} <span class="hint">· ${fmtNum(i.qty)} ${unitLabel(i.unit)}</span></span><span class="vl">${fmtCurrency(i.spent)}</span><span class="pc">${pct(i.spent)}%</span></div>`).join('')}` : ''}
+        <div class="hint" style="margin-top:14px;">${r.noValue ? `${r.noValue} item(ns) de compras antigas não têm valor registrado e ficam fora do total. ` : ''}${semTipo ? 'Itens "Sem tipo": classifique em 🏷 Tipos → Classificar itens. ' : ''}O valor de cada compra é o preço cadastrado, ou o que você editou no carrinho.</div>`;
+    };
+    $('close-modal-btn').onclick = closeModal;
+    $('pr-close-btn').onclick = closeModal;
+    $('pr-types-btn').onclick = () => { closeModal(); openSpendManager(); };
+    $('pr-month').onchange = refresh;
+    $('pr-csv-btn').onclick = () => {
+      if(!current) return;
+      downloadText(`relatorio-compras-${$('pr-month').value}.csv`, purchaseReportCsv(current, label), 'text/csv;charset=utf-8');
+      toast('Relatório exportado', 'success');
+    };
+    refresh();
+  }, 'modal-wide');
+}
+
 function deleteMeal(id, occIso){
   const m = state.mealPlan.find(x => x.id === id);
   if(!m) return;
@@ -3379,7 +3731,7 @@ function deleteMeal(id, occIso){
 function exportData(){
   const payload = {
     schema: 'despensa-receitas',
-    version: 5,
+    version: 6,
     exportedAt: new Date().toISOString(),
     ingredients: state.ingredients,
     recipes: state.recipes,
@@ -3387,7 +3739,8 @@ function exportData(){
     cart: state.cart,
     purchaseLog: state.purchaseLog,
     mealPlan: state.mealPlan,
-    calorieGoal: state.calorieGoal
+    calorieGoal: state.calorieGoal,
+    spend: state.spend
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
   const url = URL.createObjectURL(blob);
@@ -3415,6 +3768,7 @@ function importData(file){
       state.purchaseLog = payload.purchaseLog || {};
       state.mealPlan = payload.mealPlan || [];
       state.calorieGoal = normGoal(payload.calorieGoal);
+      state.spend = normSpend(payload.spend);
       saveIngredients();
       saveRecipes();
       saveDespensa();
@@ -3422,6 +3776,7 @@ function importData(file){
       saveHistory();
       saveMealPlan();
       saveGoal();
+      saveSpend();
       toast('Dados importados com sucesso', 'success');
       renderAll();
     }catch(err){
