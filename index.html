@@ -783,6 +783,14 @@
   .rp-row .pc{font-family:var(--font-body);font-size:14px;color:var(--text-faint);min-width:44px;text-align:right;}
   .rp-title{font-family:var(--font-display);font-size:10px;letter-spacing:1.4px;color:var(--accent);text-transform:uppercase;margin:18px 0 2px 0;}
   @media (max-width:640px){ .sp-row.sp-type{grid-template-columns:1fr 1fr auto;} .cl-row{grid-template-columns:1fr;gap:4px;} }
+
+  /* ---------- GRUPOS DE VARIAÇÕES E PRATOS PRONTOS ---------- */
+  .group-block{border:1px solid var(--border-strong);border-radius:3px;background:rgba(200,160,80,.03);padding:10px 12px 12px 12px;margin:0 0 14px 0;}
+  .grid + .group-block,.group-block + .grid{margin-top:14px;}
+  .group-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
+  .group-title{font-family:var(--font-medieval);font-size:17px;color:var(--gold-hi);}
+  .group-meta{font-family:var(--font-body);font-size:14px;color:var(--text-dim);margin-right:auto;}
+  .dish-list{margin-bottom:18px;}
 </style>
 </head>
 <body>
@@ -866,6 +874,7 @@ async function syncFromCloud(showToast){
       state.mealPlan = data.data.mealPlan || [];
       state.calorieGoal = normGoal(data.data.calorieGoal);
       state.spend = normSpend(data.data.spend);
+      state.dishes = data.data.dishes || [];
       persistLocal();
       renderAll();
       setSyncStatus('synced');
@@ -887,7 +896,7 @@ async function pushToCloud(){
   try{
     const { error } = await sb.from(SB_TABLE).upsert({
       id: SB_ROW_ID,
-      data: { ingredients: state.ingredients, recipes: state.recipes, despensaItems: state.despensaItems, cart: state.cart, purchaseLog: state.purchaseLog, mealPlan: state.mealPlan, calorieGoal: state.calorieGoal, spend: state.spend },
+      data: { ingredients: state.ingredients, recipes: state.recipes, despensaItems: state.despensaItems, cart: state.cart, purchaseLog: state.purchaseLog, mealPlan: state.mealPlan, calorieGoal: state.calorieGoal, spend: state.spend, dishes: state.dishes },
       updated_at: new Date().toISOString()
     });
     if(error) throw error;
@@ -909,14 +918,14 @@ function schedulePush(){
 /* ============================================================
    STATE & STORAGE
 ============================================================ */
-const STORAGE_KEYS = { ing: 'despensa_ingredients_v1', rec: 'despensa_recipes_v1', desp: 'despensa_household_v1', cart: 'despensa_cart_v1', hist: 'despensa_purchase_log_v1', plan: 'despensa_meal_plan_v1', goal: 'despensa_calorie_goal_v1', spend: 'despensa_spend_v1' };
+const STORAGE_KEYS = { ing: 'despensa_ingredients_v1', rec: 'despensa_recipes_v1', desp: 'despensa_household_v1', cart: 'despensa_cart_v1', hist: 'despensa_purchase_log_v1', plan: 'despensa_meal_plan_v1', goal: 'despensa_calorie_goal_v1', spend: 'despensa_spend_v1', dishes: 'despensa_dishes_v1' };
 const UNIT_LABEL = { g: 'g', ml: 'ml', un: 'un' };
 const CATEGORY_SUGGESTIONS = ['Grãos e Cereais','Laticínios','Carnes e Ovos','Vegetais','Frutas','Temperos e Molhos','Bebidas','Enlatados','Congelados','Padaria','Outros'];
 const DESPENSA_UNIT_SUGGESTIONS = ['un','rolo','tubo','pacote','frasco','caixa','barra','litro','kg'];
 const DESPENSA_CATEGORY_SUGGESTIONS = ['Higiene Pessoal','Limpeza','Banheiro','Cozinha (não alimento)','Papelaria','Pet','Outros'];
 const MONTH_NAMES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
-let state = { ingredients: [], recipes: [], despensaItems: [], cart: [], purchaseLog: {}, mealPlan: [], calorieGoal: { history: [], overrides: {} }, spend: defaultSpend() };
+let state = { ingredients: [], recipes: [], despensaItems: [], cart: [], purchaseLog: {}, mealPlan: [], calorieGoal: { history: [], overrides: {} }, spend: defaultSpend(), dishes: [] };
 let currentTab = 'ingredients';
 let ingSearch = '';
 let ingCategoryFilter = '';
@@ -938,6 +947,7 @@ function loadLocalState(){
     const rawPlan = localStorage.getItem(STORAGE_KEYS.plan);
     const rawGoal = localStorage.getItem(STORAGE_KEYS.goal);
     const rawSpend = localStorage.getItem(STORAGE_KEYS.spend);
+    const rawDishes = localStorage.getItem(STORAGE_KEYS.dishes);
     state.ingredients = rawIng ? JSON.parse(rawIng) : [];
     state.recipes = rawRec ? JSON.parse(rawRec) : [];
     state.despensaItems = rawDesp ? JSON.parse(rawDesp) : [];
@@ -946,9 +956,10 @@ function loadLocalState(){
     state.mealPlan = rawPlan ? JSON.parse(rawPlan) : [];
     state.calorieGoal = normGoal(rawGoal ? JSON.parse(rawGoal) : null);
     state.spend = normSpend(rawSpend ? JSON.parse(rawSpend) : null);
+    state.dishes = rawDishes ? JSON.parse(rawDishes) : [];
   }catch(e){
     console.error('Falha ao carregar dados salvos localmente', e);
-    state = { ingredients: [], recipes: [], despensaItems: [], cart: [], purchaseLog: {}, mealPlan: [], calorieGoal: { history: [], overrides: {} }, spend: defaultSpend() };
+    state = { ingredients: [], recipes: [], despensaItems: [], cart: [], purchaseLog: {}, mealPlan: [], calorieGoal: { history: [], overrides: {} }, spend: defaultSpend(), dishes: [] };
   }
 }
 function persistLocal(){
@@ -961,6 +972,7 @@ function persistLocal(){
     localStorage.setItem(STORAGE_KEYS.plan, JSON.stringify(state.mealPlan));
     localStorage.setItem(STORAGE_KEYS.goal, JSON.stringify(state.calorieGoal));
     localStorage.setItem(STORAGE_KEYS.spend, JSON.stringify(state.spend));
+    localStorage.setItem(STORAGE_KEYS.dishes, JSON.stringify(state.dishes));
   }catch(e){ console.error('Falha ao salvar localmente', e); }
 }
 // Salva só o que mudou, uma única vez, fora do caminho do clique (UI responde na hora)
@@ -968,7 +980,7 @@ const dirtyKeys = new Set();
 let flushScheduled = false;
 function flushLocal(){
   flushScheduled = false;
-  const fieldByKey = { ing:'ingredients', rec:'recipes', desp:'despensaItems', cart:'cart', hist:'purchaseLog', plan:'mealPlan', goal:'calorieGoal', spend:'spend' };
+  const fieldByKey = { ing:'ingredients', rec:'recipes', desp:'despensaItems', cart:'cart', hist:'purchaseLog', plan:'mealPlan', goal:'calorieGoal', spend:'spend', dishes:'dishes' };
   dirtyKeys.forEach(k => {
     try{ localStorage.setItem(STORAGE_KEYS[k], JSON.stringify(state[fieldByKey[k]])); }
     catch(e){ console.error('Falha ao salvar localmente', e); }
@@ -988,6 +1000,7 @@ function saveHistory(){ markDirty('hist'); }
 function saveMealPlan(){ markDirty('plan'); }
 function saveGoal(){ markDirty('goal'); }
 function saveSpend(){ markDirty('spend'); }
+function saveDishes(){ markDirty('dishes'); }
 function normGoal(g){
   g = g || {};
   const ov = {};
@@ -1152,7 +1165,7 @@ function renderIngredientsView(){
   const lowCount = state.ingredients.filter(i => stockStatus(i)==='low').length;
 
   let filtered = state.ingredients.filter(i => {
-    if(ingSearch && !i.name.toLowerCase().includes(ingSearch.toLowerCase())) return false;
+    if(ingSearch && !((i.name + ' ' + (i.groupName || '')).toLowerCase().includes(ingSearch.toLowerCase()))) return false;
     if(ingCategoryFilter && i.category !== ingCategoryFilter) return false;
     if(ingLowStockOnly && stockStatus(i) !== 'low') return false;
     return true;
@@ -1176,7 +1189,7 @@ function renderIngredientsView(){
   } else if(!filtered.length){
     cardsHtml = `<div class="empty-state"><div class="glyph">🔍</div><h3>Nada encontrado</h3><p>Ajuste a busca ou os filtros.</p></div>`;
   } else {
-    cardsHtml = `<div class="grid">` + filtered.map(renderIngredientCard).join('') + `</div>`;
+    cardsHtml = renderIngredientSegments(filtered);
   }
 
   container.innerHTML = `
@@ -1199,6 +1212,9 @@ function renderIngredientsView(){
   document.getElementById('ing-lowstock-toggle').onclick = ()=>{ ingLowStockOnly = !ingLowStockOnly; renderIngredientsView(); };
   document.getElementById('btn-add-ingredient').onclick = ()=> openIngredientForm();
   document.getElementById('btn-spend-ing').onclick = ()=> openSpendManager();
+  container.querySelectorAll('[data-group-toggle]').forEach(b => { b.onclick = () => { const g = decodeURIComponent(b.dataset.groupToggle); groupShowAll[g] = !groupShowAll[g]; renderIngredientsView(); }; });
+  container.querySelectorAll('[data-group-add]').forEach(b => { b.onclick = () => { const g = decodeURIComponent(b.dataset.groupAdd); const first = state.ingredients.find(i => i.groupName === g); if(first) openIngredientForm(null, { template: first }); }; });
+  container.querySelectorAll('[data-dup-ing]').forEach(b => { b.onclick = (e) => { e.stopPropagation(); const t = state.ingredients.find(i => i.id === b.dataset.dupIng); if(t) openIngredientForm(null, { template: t }); }; });
 
   container.querySelectorAll('[data-edit-ing]').forEach(btn=>{
     btn.onclick = (e)=>{ e.stopPropagation(); openIngredientForm(btn.dataset.editIng); };
@@ -1237,6 +1253,7 @@ function renderIngredientCard(ing){
           ${spendTagHtml(ing)}
         </div>
         <div class="card-actions">
+          <button class="mini-btn" data-dup-ing="${ing.id}" title="Duplicar como variação">⧉</button>
           <button class="mini-btn" data-cart-add-ing="${ing.id}" title="Adicionar ao carrinho">🛒</button>
           <button class="mini-btn" data-edit-ing="${ing.id}" title="Editar">✎</button>
           <button class="mini-btn" data-delete-ing="${ing.id}" title="Excluir">✕</button>
@@ -1282,16 +1299,19 @@ function adjustConsumableStock(type, id, delta){
   updateTabBadges();
 }
 
-function openIngredientForm(id){
+function openIngredientForm(id, opts){
   const editing = id ? state.ingredients.find(i=>i.id===id) : null;
-  ingPhotoData = editing ? editing.photo : null;
-  const nutriSrc = editing ? ((editing.nutriBasis === 'portion' && editing.nutritionInput) ? editing.nutritionInput : (editing.nutrition || {})) : {};
+  const tpl = (!editing && opts && opts.template) ? opts.template : null;
+  const view = editing || (tpl ? Object.assign({}, tpl, { name: '', stockCurrent: 0, groupName: tpl.groupName || tpl.name }) : null);
+  const groupNames = Array.from(new Set(state.ingredients.map(i => i.groupName).filter(Boolean)));
+  ingPhotoData = view ? view.photo : null;
+  const nutriSrc = view ? ((view.nutriBasis === 'portion' && view.nutritionInput) ? view.nutritionInput : (view.nutrition || {})) : {};
   const nv0 = (v) => (v === undefined || v === null) ? '' : v;
   const nutriShown = { calories: nv0(nutriSrc.calories), protein: nv0(nutriSrc.protein), carbs: nv0(nutriSrc.carbs), fat: nv0(nutriSrc.fat) };
 
   const html = `
     <div class="modal-header">
-      <h2>${editing ? 'Editar ingrediente' : 'Novo ingrediente'}</h2>
+      <h2>${editing ? 'Editar ingrediente' : (tpl ? 'Nova variação' : 'Novo ingrediente')}</h2>
       <button class="modal-close" id="close-modal-btn">×</button>
     </div>
     <div class="modal-body">
@@ -1308,66 +1328,73 @@ function openIngredientForm(id){
         <div class="field-row">
           <div class="field">
             <label>Nome *</label>
-            <input type="text" id="ing-name" required value="${editing ? escapeHtml(editing.name) : ''}" placeholder="Ex: Arroz branco">
+            <input type="text" id="ing-name" required value="${view ? escapeHtml(view.name) : ''}" placeholder="Ex: Arroz branco">
           </div>
           <div class="field">
             <label>Categoria</label>
-            <input type="text" id="ing-category" list="category-list" value="${editing ? escapeHtml(editing.category||'') : ''}" placeholder="Ex: Grãos e Cereais">
+            <input type="text" id="ing-category" list="category-list" value="${view ? escapeHtml(view.category||'') : ''}" placeholder="Ex: Grãos e Cereais">
             <datalist id="category-list">${CATEGORY_SUGGESTIONS.map(c=>`<option value="${c}">`).join('')}</datalist>
           </div>
         </div>
 
         <div class="field">
+          <label>Grupo / variações (opcional)</label>
+          <input type="text" id="ing-group" list="group-list" value="${view ? escapeHtml(view.groupName || '') : ''}" placeholder="Ex: Refrigerante lata 350 ml">
+          <datalist id="group-list">${groupNames.map(g => `<option value="${escapeHtml(g)}">`).join('')}</datalist>
+          <div class="hint">Itens do mesmo grupo aparecem juntos (ex.: Coca Zero, Guaraná Zero, Sprite Zero). Use ⧉ no card para criar uma variação copiando um item.</div>
+        </div>
+
+        <div class="field">
           <label>Tipo de gasto (para os relatórios)</label>
-          <select id="ing-spend-type">${spendTypeOptionsHtml(editing ? editing.spendTypeId : '')}</select>
+          <select id="ing-spend-type">${spendTypeOptionsHtml(view ? view.spendTypeId : '')}</select>
         </div>
 
         <div class="field">
           <label>Unidade de medida *</label>
           <select id="ing-unit">
-            <option value="g" ${editing && editing.unit==='g' ? 'selected':''}>Gramas (g)</option>
-            <option value="ml" ${editing && editing.unit==='ml' ? 'selected':''}>Mililitros (ml)</option>
-            <option value="un" ${editing && editing.unit==='un' ? 'selected':''}>Unidade (un)</option>
+            <option value="g" ${view && view.unit==='g' ? 'selected':''}>Gramas (g)</option>
+            <option value="ml" ${view && view.unit==='ml' ? 'selected':''}>Mililitros (ml)</option>
+            <option value="un" ${view && view.unit==='un' ? 'selected':''}>Unidade (un)</option>
           </select>
         </div>
 
         <fieldset>
           <legend>Porção (opcional)</legend>
           <div class="field-row">
-            <div class="field"><label>Tamanho de 1 porção (<span id="portion-unit-label">g</span>)</label><input type="number" min="0" step="any" id="ing-portion-size" value="${editing && editing.portionSize ? editing.portionSize : ''}" placeholder="Ex: 30"></div>
-            <div class="field"><label>Nome da porção</label><input type="text" id="ing-portion-name" value="${editing && editing.portionName ? escapeHtml(editing.portionName) : ''}" placeholder="Ex: scoop, fatia, colher"></div>
+            <div class="field"><label>Tamanho de 1 porção (<span id="portion-unit-label">g</span>)</label><input type="number" min="0" step="any" id="ing-portion-size" value="${view && view.portionSize ? view.portionSize : ''}" placeholder="Ex: 30"></div>
+            <div class="field"><label>Nome da porção</label><input type="text" id="ing-portion-name" value="${view && view.portionName ? escapeHtml(view.portionName) : ''}" placeholder="Ex: scoop, fatia, colher"></div>
           </div>
           <div class="hint" style="margin:-6px 0 10px 0;">Ex: 1 scoop = 30 g. Com isso você usa "2 scoops" nas receitas e pode informar a nutrição do jeito que vem no rótulo (por porção).</div>
         </fieldset>
 
         <div class="field checkbox-field">
-          <input type="checkbox" id="ing-consumable" ${editing && editing.consumable ? 'checked' : ''}>
+          <input type="checkbox" id="ing-consumable" ${view && view.consumable ? 'checked' : ''}>
           <label for="ing-consumable">É um item consumível (ex: refrigerante, salgadinho, chocolate)</label>
         </div>
         <div class="hint" style="margin:-8px 0 14px 0;">Itens consumíveis ganham botões +/− no card pra você ajustar o estoque na hora, sem precisar criar uma receita — mas ainda podem ser usados normalmente dentro de receitas.</div>
 
-        <div class="field" id="ing-step-field" style="${editing && editing.consumable ? '' : 'display:none;'}">
+        <div class="field" id="ing-step-field" style="${view && view.consumable ? '' : 'display:none;'}">
           <label>Quantidade por clique no +/− (na unidade escolhida acima)</label>
-          <input type="number" min="0" step="any" id="ing-step" value="${editing && editing.step ? editing.step : 1}">
+          <input type="number" min="0" step="any" id="ing-step" value="${view && view.step ? view.step : 1}">
           <div class="hint">Ex: se uma fatia de queijo tem 20 g, coloque 20 — cada clique em − tira 20 g do estoque.</div>
         </div>
 
         <fieldset>
           <legend>Estoque</legend>
           <div class="field-row-3">
-            <div class="field"><label>Mínimo</label><input type="number" min="0" step="any" id="ing-stock-min" value="${editing ? editing.stockMin : 0}"></div>
-            <div class="field"><label>Máximo</label><input type="number" min="0" step="any" id="ing-stock-max" value="${editing ? editing.stockMax : 0}"></div>
-            <div class="field"><label>Tenho agora</label><input type="number" min="0" step="any" id="ing-stock-current" value="${editing ? editing.stockCurrent : 0}"></div>
+            <div class="field"><label>Mínimo</label><input type="number" min="0" step="any" id="ing-stock-min" value="${view ? view.stockMin : 0}"></div>
+            <div class="field"><label>Máximo</label><input type="number" min="0" step="any" id="ing-stock-max" value="${view ? view.stockMax : 0}"></div>
+            <div class="field"><label>Tenho agora</label><input type="number" min="0" step="any" id="ing-stock-current" value="${view ? view.stockCurrent : 0}"></div>
           </div>
         </fieldset>
 
         <fieldset>
           <legend>Preço</legend>
           <div class="field-row">
-            <div class="field"><label>Valor pago (R$)</label><input type="number" min="0" step="0.01" id="ing-price" value="${editing ? editing.price : ''}" placeholder="Ex: 12.90"></div>
-            <div class="field"><label>Referente a quantos <span id="price-unit-label">g</span></label><input type="number" min="0" step="any" id="ing-price-qty" value="${editing ? editing.priceQty : ''}" placeholder="Ex: 500"></div>
+            <div class="field"><label>Valor pago (R$)</label><input type="number" min="0" step="0.01" id="ing-price" value="${view ? view.price : ''}" placeholder="Ex: 12.90"></div>
+            <div class="field"><label>Referente a quantos <span id="price-unit-label">g</span></label><input type="number" min="0" step="any" id="ing-price-qty" value="${view ? view.priceQty : ''}" placeholder="Ex: 500"></div>
           </div>
-          <div class="field"><label>Onde comprar (opcional)</label><input type="text" id="ing-where" value="${editing ? escapeHtml(editing.whereToBuy||'') : ''}" placeholder="Ex: Mercado São João, feira..."></div>
+          <div class="field"><label>Onde comprar (opcional)</label><input type="text" id="ing-where" value="${view ? escapeHtml(view.whereToBuy||'') : ''}" placeholder="Ex: Mercado São João, feira..."></div>
         </fieldset>
 
         <fieldset>
@@ -1375,8 +1402,8 @@ function openIngredientForm(id){
           <div class="field">
             <label>Os valores abaixo são</label>
             <select id="ing-nutri-basis">
-              <option value="100" ${!(editing && editing.nutriBasis === 'portion') ? 'selected' : ''}></option>
-              <option value="portion" ${editing && editing.nutriBasis === 'portion' ? 'selected' : ''}></option>
+              <option value="100" ${!(view && view.nutriBasis === 'portion') ? 'selected' : ''}></option>
+              <option value="portion" ${view && view.nutriBasis === 'portion' ? 'selected' : ''}></option>
             </select>
           </div>
           <div class="field-row-3">
@@ -1388,7 +1415,7 @@ function openIngredientForm(id){
           <div class="hint" id="nutri-equiv" style="margin:-4px 0 10px 0;display:none;"></div>
         </fieldset>
 
-        <div class="field"><label>Notas (opcional)</label><textarea id="ing-notes" placeholder="Observações...">${editing ? escapeHtml(editing.notes||'') : ''}</textarea></div>
+        <div class="field"><label>Notas (opcional)</label><textarea id="ing-notes" placeholder="Observações...">${view ? escapeHtml(view.notes||'') : ''}</textarea></div>
       </form>
     </div>
     <div class="modal-footer">
@@ -1468,6 +1495,7 @@ function openIngredientForm(id){
         portionSize,
         portionName: document.getElementById('ing-portion-name').value.trim(),
         spendTypeId: document.getElementById('ing-spend-type').value,
+        groupName: document.getElementById('ing-group').value.trim(),
         nutriBasis,
         consumable: document.getElementById('ing-consumable').checked,
         step: parseFloat(document.getElementById('ing-step').value) > 0 ? parseFloat(document.getElementById('ing-step').value) : 1,
@@ -1481,6 +1509,7 @@ function openIngredientForm(id){
         notes: document.getElementById('ing-notes').value.trim()
       };
       if(nutriBasis === 'portion') data.nutritionInput = nutriInput;
+      if(!editing && opts && opts.template && !opts.template.groupName && data.groupName){ const tp = state.ingredients.find(i => i.id === opts.template.id); if(tp) tp.groupName = data.groupName; }
       if(editing){
         const idx = state.ingredients.findIndex(i=>i.id===editing.id);
         state.ingredients[idx] = data;
@@ -1799,12 +1828,14 @@ function renderRecipesView(){
       <button class="toggle-chip ${recReadyOnly?'active':''}" id="rec-ready-toggle">✓ Só as que dá pra fazer</button>
       <button class="btn-primary" id="btn-add-recipe">+ Nova receita</button>
     </div>
+    ${renderDishesSection()}
     ${cardsHtml}
   `;
 
   document.getElementById('rec-search-input').oninput = (e)=>{ recSearch = e.target.value; renderRecipesView(); };
   document.getElementById('rec-ready-toggle').onclick = ()=>{ recReadyOnly = !recReadyOnly; renderRecipesView(); };
   document.getElementById('btn-add-recipe').onclick = ()=> openRecipeForm();
+  wireDishes(container);
 
   container.querySelectorAll('[data-open-recipe]').forEach(card=>{
     card.onclick = ()=> openRecipeDetail(card.dataset.openRecipe);
@@ -1823,7 +1854,7 @@ function renderRecipeCard(rec){
       <div class="card-title-row">
         <div>
           <div class="card-title">${escapeHtml(rec.name)}</div>
-          <div class="card-cat">${rec.servings || 1} porç${rec.servings===1?'ão':'ões'}${rec.prepTime ? ' · ⏱ ' + fmtMinutes(rec.prepTime) : ''}</div>
+          <div class="card-cat">${rec.servings || 1} porç${rec.servings===1?'ão':'ões'}${rec.prepTime ? ' · ⏱ ' + fmtMinutes(rec.prepTime) : ''}${rec.stockable ? ' · estocável' : ''}</div>
         </div>
       </div>
       ${badge}
@@ -1863,6 +1894,10 @@ function openRecipeForm(id){
         <div class="field-row">
           <div class="field"><label>Porções (rendimento) *</label><input type="number" min="1" step="1" id="rec-servings" value="${editing ? editing.servings : 2}"></div>
           <div class="field"><label>Tempo de preparo (minutos)</label><input type="number" min="0" step="1" id="rec-prep" value="${editing && editing.prepTime ? editing.prepTime : ''}" placeholder="Ex: 30"></div>
+        </div>
+        <div class="field checkbox-field">
+          <input type="checkbox" id="rec-stockable" ${editing && editing.stockable ? 'checked' : ''}>
+          <label for="rec-stockable">Estocável (prato pronto): rende porções que guardo e como em outros dias</label>
         </div>
 
         <div class="field-row">
@@ -1920,6 +1955,7 @@ function openRecipeForm(id){
         name,
         servings: parseInt(document.getElementById('rec-servings').value) || 1,
         prepTime: parseInt(document.getElementById('rec-prep').value) > 0 ? parseInt(document.getElementById('rec-prep').value) : 0,
+        stockable: document.getElementById('rec-stockable').checked,
         photo: recPhotoData,
         videoLink: document.getElementById('rec-yt-link').value.trim(),
         siteLink: document.getElementById('rec-site-link').value.trim(),
@@ -2123,23 +2159,7 @@ function openRecipeDetail(id){
     document.getElementById('close-modal-btn').onclick = closeModal;
     document.getElementById('detail-close-btn').onclick = closeModal;
     document.getElementById('detail-edit-btn').onclick = () => { closeModal(); openRecipeForm(rec.id); };
-    document.getElementById('detail-cook-btn').onclick = () => {
-      const readiness = computeReadiness(rec, currentServings);
-      const missing = readiness.rows.filter(r=>!r.ok);
-      if(missing.length){
-        if(!confirm(`Faltam ingredientes para ${missing.length} item(ns). Deseja baixar o estoque mesmo assim (ficará em 0 onde faltar)?`)) return;
-      }
-      readiness.rows.forEach(r => {
-        if(r.ing){
-          const idx = state.ingredients.findIndex(i=>i.id===r.ing.id);
-          state.ingredients[idx].stockCurrent = Math.max(0, state.ingredients[idx].stockCurrent - r.needed);
-        }
-      });
-      saveIngredients();
-      toast('Estoque atualizado com base na receita', 'success');
-      closeModal();
-      renderAll();
-    };
+    document.getElementById('detail-cook-btn').onclick = () => { closeModal(); openCookDialog(rec, currentServings); };
   });
 }
 
@@ -2489,7 +2509,7 @@ function mealChipHtml(m, iso){
   const mult = (m.servings || 1) !== 1 ? ` <span style="color:var(--text-faint);font-weight:400;">×${fmtNum(m.servings)}</span>` : '';
   return `
     <button class="meal-chip" data-plan-edit="${m.id}" data-plan-occ="${iso}">
-      <div class="meal-slot"><span>${escapeHtml(slotLabel(m.slot))}${m.custom ? (m.consumeOf ? ' · consumo' : ' · fora') : ''}</span>${recur}</div>
+      <div class="meal-slot"><span>${escapeHtml(slotLabel(m.slot))}${m.custom ? ((m.consumeOf || m.consumeOfDish) ? ' · consumo' : ' · fora') : ''}</span>${recur}</div>
       <div class="meal-name">${escapeHtml(mealTitle(m))}${mult}</div>
       ${n ? `<div class="meal-macros">${r0(n.calories)} kcal<br>${fmtMacros(n)}${rec && rec.prepTime ? `<br>⏱ ${fmtMinutes(rec.prepTime)}` : ''}</div>` : ''}
     </button>`;
@@ -3669,6 +3689,197 @@ function openPurchaseReport(){
   }, 'modal-wide');
 }
 
+/* ---------- Variações (grupos) ---------- */
+let groupShowAll = {};
+
+function renderGroupBlock(g, members){
+  const all = state.ingredients.filter(i => i.groupName === g);
+  const forceAll = !!groupShowAll[g] || !!ingSearch || ingLowStockOnly;
+  const visible = forceAll ? members : members.filter(m => m.stockCurrent > 0);
+  const hidden = members.length - visible.length;
+  const units = new Set(all.map(i => i.unit));
+  const total = all.reduce((a, i) => a + (i.stockCurrent || 0), 0);
+  const meta = `${units.size === 1 ? fmtNum(total) + ' ' + unitLabel(all[0].unit) + ' no total · ' : ''}${all.length} variaç${all.length === 1 ? 'ão' : 'ões'}`;
+  const enc = encodeURIComponent(g);
+  return `
+    <div class="group-block">
+      <div class="group-head">
+        <span class="group-title">${escapeHtml(g)}</span>
+        <span class="group-meta">${meta}</span>
+        ${(hidden > 0 || groupShowAll[g]) && !ingSearch && !ingLowStockOnly ? `<button class="toggle-chip" data-group-toggle="${enc}">${groupShowAll[g] ? 'Esconder sem estoque' : 'Mostrar ' + hidden + ' sem estoque'}</button>` : ''}
+        <button class="btn-ghost" data-group-add="${enc}">+ variação</button>
+      </div>
+      ${visible.length ? `<div class="grid">${visible.map(renderIngredientCard).join('')}</div>` : '<p class="hint">Nenhuma variação em estoque no momento.</p>'}
+    </div>`;
+}
+
+function renderIngredientSegments(list){
+  const keyOf = (i) => i.groupName || i.name;
+  const sorted = [...list].sort((a, b) => keyOf(a).localeCompare(keyOf(b), 'pt-BR') || a.name.localeCompare(b.name, 'pt-BR'));
+  let out = '', singles = [], idx = 0;
+  const flush = () => { if(singles.length){ out += '<div class="grid">' + singles.map(renderIngredientCard).join('') + '</div>'; singles = []; } };
+  while(idx < sorted.length){
+    const it = sorted[idx];
+    if(!it.groupName){ singles.push(it); idx++; continue; }
+    flush();
+    const g = it.groupName, members = [];
+    while(idx < sorted.length && sorted[idx].groupName === g){ members.push(sorted[idx]); idx++; }
+    out += renderGroupBlock(g, members);
+  }
+  flush();
+  return out;
+}
+
+/* ---------- Pratos prontos (receitas estocáveis) ---------- */
+function perServingOf(rec){
+  const t = recipeNutritionTotal(rec), n = rec.servings || 1, r2 = (v) => Math.round(v * 100) / 100;
+  return { calories: r2(t.calories / n), protein: r2(t.protein / n), carbs: r2(t.carbs / n), fat: r2(t.fat / n) };
+}
+function addDish(recipeId, name, servings, per, date){
+  const ex = state.dishes.find(d => d.recipeId === recipeId);
+  if(ex){ ex.servings = Math.round((ex.servings + servings) * 100) / 100; ex.lastCooked = date; ex.perServing = per; ex.name = name; }
+  else state.dishes.push({ id: uid(), recipeId, name, servings, lastCooked: date, perServing: per });
+}
+function pushEaten(label, servings, per, slot, date, recipeId, restock){
+  const r2 = (v) => Math.round(v * 100) / 100;
+  state.mealPlan.push({
+    id: uid(), recipeId: '', custom: true,
+    customName: `${label} · ${fmtNum(servings)} porç.`,
+    customNutrition: { calories: r2(per.calories * servings), protein: r2(per.protein * servings), carbs: r2(per.carbs * servings), fat: r2(per.fat * servings) },
+    consumeOfDish: { recipeId, name: label, servings, perServing: per, restock: !!restock },
+    slot, servings: 1, date, repeat: 'none', days: [], until: '', exceptions: []
+  });
+}
+
+function renderDishesSection(){
+  if(!state.dishes.length) return '';
+  return `
+    <div class="cart-section-title">Pratos prontos <span class="count">${state.dishes.length}</span></div>
+    <div class="dish-list">
+      ${state.dishes.map(d => `
+        <div class="suggestion-row">
+          <div class="suggestion-row-thumb">🍲</div>
+          <div class="row-main">
+            <div class="row-name">${escapeHtml(d.name)}</div>
+            <div class="row-sub">${fmtNum(d.servings)} porç. guardadas · ${r0(d.perServing.calories)} kcal/porção · feito em ${fmtBR(d.lastCooked)}</div>
+          </div>
+          <button class="btn-secondary" data-dish-eat="${d.id}">Comer</button>
+          <button class="btn-ghost" data-dish-trash="${d.id}">Descartar</button>
+        </div>`).join('')}
+    </div>`;
+}
+function wireDishes(container){
+  container.querySelectorAll('[data-dish-eat]').forEach(b => { b.onclick = () => openEatDishDialog(b.dataset.dishEat); });
+  container.querySelectorAll('[data-dish-trash]').forEach(b => {
+    b.onclick = () => {
+      const d = state.dishes.find(x => x.id === b.dataset.dishTrash); if(!d) return;
+      if(!confirm(`Descartar ${fmtNum(d.servings)} porção(ões) de ${d.name}?`)) return;
+      state.dishes = state.dishes.filter(x => x.id !== d.id); saveDishes(); toast('Prato descartado', 'success'); renderAll();
+    };
+  });
+}
+
+function whenFieldsHtml(){
+  const t = toISO(new Date());
+  return `
+    <div class="field-row">
+      <div class="field"><label>Refeição</label><select id="wf-slot">${MEAL_SLOTS.map(x => `<option value="${x.id}" ${x.id === slotByTime() ? 'selected' : ''}>${x.label}</option>`).join('')}</select></div>
+      <div class="field"><label>Em que dia?</label><input type="date" id="wf-date" value="${t}" max="${t}"></div>
+    </div>
+    <div style="display:flex;gap:6px;margin:-6px 0 12px 0;">
+      <button type="button" class="btn-ghost" id="wf-today">Hoje</button>
+      <button type="button" class="btn-ghost" id="wf-yest">Ontem</button>
+    </div>`;
+}
+function wireWhenFields(){
+  const t = toISO(new Date()), y = toISO(addDays(new Date(), -1));
+  document.getElementById('wf-today').onclick = () => { document.getElementById('wf-date').value = t; };
+  document.getElementById('wf-yest').onclick = () => { document.getElementById('wf-date').value = y; };
+}
+
+function openCookDialog(rec, cookedDefault){
+  const cookedInit = cookedDefault || rec.servings || 1;
+  const html = `
+    <div class="modal-header"><h2>Cozinhei · ${escapeHtml(rec.name)}</h2><button class="modal-close" id="close-modal-btn">×</button></div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field"><label>Porções feitas *</label><input type="number" id="ck-cooked" min="0.25" step="any" value="${cookedInit}"></div>
+        <div class="field"><label>Porções que comi agora</label><input type="number" id="ck-eaten" min="0" step="any" value="${rec.stockable ? 0 : cookedInit}"></div>
+      </div>
+      ${whenFieldsHtml()}
+      <div class="field"><div class="meal-preview" id="ck-preview"></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" id="ck-cancel-btn">Cancelar</button><button class="btn-primary" id="ck-save-btn">Confirmar</button></div>`;
+  openModal(html, () => {
+    const $ = (x) => document.getElementById(x);
+    const vals = () => ({ cooked: parseFloat($('ck-cooked').value) || 0, eaten: parseFloat($('ck-eaten').value) || 0 });
+    const refresh = () => {
+      const { cooked, eaten } = vals(); const per = perServingOf(rec);
+      const rd = computeReadiness(rec, cooked || 1); const miss = rd.rows.filter(r => !r.ok).length;
+      const left = Math.max(0, cooked - eaten);
+      let t = `Baixa dos ingredientes para ${fmtNum(cooked)} porção(ões).` + (miss ? ` <span style="color:#e0a850;">Faltam ${miss} ingrediente(s) em estoque.</span>` : '');
+      if(eaten > 0) t += `<br>Consumo: ${fmtNum(eaten)} porç. · ${r0(per.calories * eaten)} kcal entram no dia escolhido.`;
+      if(left > 0) t += rec.stockable ? `<br>${fmtNum(left)} porção(ões) vão para os Pratos prontos.` : `<br>Sobram ${fmtNum(left)} porção(ões) que não serão guardadas (receita não estocável).`;
+      $('ck-preview').innerHTML = t;
+    };
+    $('close-modal-btn').onclick = closeModal; $('ck-cancel-btn').onclick = closeModal;
+    $('ck-cooked').oninput = refresh; $('ck-eaten').oninput = refresh;
+    wireWhenFields(); refresh();
+    $('ck-save-btn').onclick = () => {
+      const { cooked, eaten } = vals();
+      if(!(cooked > 0)){ toast('Informe quantas porções você fez', 'error'); return; }
+      if(eaten < 0 || eaten > cooked){ toast('As porções comidas não podem passar das feitas', 'error'); return; }
+      const date = $('wf-date').value, todayIso = toISO(new Date());
+      if(eaten > 0 && (!date || date > todayIso)){ toast('Escolha hoje ou um dia anterior', 'error'); return; }
+      const rd = computeReadiness(rec, cooked);
+      const missing = rd.rows.filter(r => !r.ok);
+      if(missing.length && !confirm(`Faltam ingredientes para ${missing.length} item(ns). Baixar o estoque mesmo assim (fica em 0 onde faltar)?`)) return;
+      rd.rows.forEach(r => { if(r.ing){ const ix = state.ingredients.findIndex(i => i.id === r.ing.id); state.ingredients[ix].stockCurrent = Math.max(0, Math.round((state.ingredients[ix].stockCurrent - r.needed) * 100) / 100); } });
+      const per = perServingOf(rec);
+      if(eaten > 0) pushEaten(rec.name, eaten, per, $('wf-slot').value, date, rec.id, rec.stockable);
+      const left = Math.round((cooked - eaten) * 100) / 100;
+      if(rec.stockable && left > 0) addDish(rec.id, rec.name, left, per, todayIso);
+      saveIngredients(); saveMealPlan(); saveDishes(); closeModal();
+      toast(`Receita registrada${eaten > 0 ? ' · ' + r0(per.calories * eaten) + ' kcal no dia ' + fmtBR(date) : ''}${rec.stockable && left > 0 ? ' · ' + fmtNum(left) + ' porç. guardadas' : ''}`, 'success');
+      renderAll();
+    };
+  });
+}
+
+function openEatDishDialog(dishId){
+  const dish = state.dishes.find(d => d.id === dishId); if(!dish) return;
+  const html = `
+    <div class="modal-header"><h2>Comer · ${escapeHtml(dish.name)}</h2><button class="modal-close" id="close-modal-btn">×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Quantas porções? *</label><input type="number" id="ed-portions" min="0.25" step="any" value="1"></div>
+      <div class="hint" style="margin:-6px 0 12px 0;">Guardadas: ${fmtNum(dish.servings)} porção(ões) · ${r0(dish.perServing.calories)} kcal cada.</div>
+      ${whenFieldsHtml()}
+      <div class="field"><div class="meal-preview" id="ed-preview"></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn-secondary" id="ed-cancel-btn">Cancelar</button><button class="btn-primary" id="ed-save-btn">Registrar consumo</button></div>`;
+  openModal(html, () => {
+    const $ = (x) => document.getElementById(x);
+    const refresh = () => {
+      const n = parseFloat($('ed-portions').value) || 0;
+      $('ed-preview').innerHTML = `= ${r0(dish.perServing.calories * n)} kcal · ${fmtMacros({ protein: dish.perServing.protein * n, carbs: dish.perServing.carbs * n, fat: dish.perServing.fat * n })}` + (n > dish.servings ? `<br><span style="color:#e0a850;">Só há ${fmtNum(dish.servings)} guardadas: o estoque vai a 0 (consumo registrado por inteiro).</span>` : '');
+    };
+    $('close-modal-btn').onclick = closeModal; $('ed-cancel-btn').onclick = closeModal;
+    $('ed-portions').oninput = refresh; wireWhenFields(); refresh();
+    $('ed-save-btn').onclick = () => {
+      const n = parseFloat($('ed-portions').value) || 0;
+      if(!(n > 0)){ toast('Informe quantas porções você comeu', 'error'); return; }
+      const date = $('wf-date').value;
+      if(!date || date > toISO(new Date())){ toast('Escolha hoje ou um dia anterior', 'error'); return; }
+      pushEaten(dish.name, n, dish.perServing, $('wf-slot').value, date, dish.recipeId, true);
+      dish.servings = Math.max(0, Math.round((dish.servings - n) * 100) / 100);
+      if(dish.servings <= 0) state.dishes = state.dishes.filter(x => x.id !== dish.id);
+      saveDishes(); saveMealPlan(); closeModal();
+      toast(`Consumo registrado em ${fmtBR(date)}: ${r0(dish.perServing.calories * n)} kcal`, 'success');
+      renderAll();
+    };
+  });
+}
+
 function deleteMeal(id, occIso){
   const m = state.mealPlan.find(x => x.id === id);
   if(!m) return;
@@ -3680,6 +3891,10 @@ function deleteMeal(id, occIso){
         ing.stockCurrent = Math.round((ing.stockCurrent + m.consumeOf.quantity) * 100) / 100;
         saveIngredients();
       }
+    }
+    if(m.consumeOfDish && m.consumeOfDish.restock && confirm(`Devolver ${fmtNum(m.consumeOfDish.servings)} porção(ões) de ${m.consumeOfDish.name} aos Pratos prontos?`)){
+      addDish(m.consumeOfDish.recipeId, m.consumeOfDish.name, m.consumeOfDish.servings, m.consumeOfDish.perServing, toISO(new Date()));
+      saveDishes();
     }
     state.mealPlan = state.mealPlan.filter(x => x.id !== id);
     saveMealPlan();
@@ -3731,7 +3946,7 @@ function deleteMeal(id, occIso){
 function exportData(){
   const payload = {
     schema: 'despensa-receitas',
-    version: 6,
+    version: 7,
     exportedAt: new Date().toISOString(),
     ingredients: state.ingredients,
     recipes: state.recipes,
@@ -3740,7 +3955,8 @@ function exportData(){
     purchaseLog: state.purchaseLog,
     mealPlan: state.mealPlan,
     calorieGoal: state.calorieGoal,
-    spend: state.spend
+    spend: state.spend,
+    dishes: state.dishes
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
   const url = URL.createObjectURL(blob);
@@ -3769,6 +3985,7 @@ function importData(file){
       state.mealPlan = payload.mealPlan || [];
       state.calorieGoal = normGoal(payload.calorieGoal);
       state.spend = normSpend(payload.spend);
+      state.dishes = payload.dishes || [];
       saveIngredients();
       saveRecipes();
       saveDespensa();
@@ -3777,6 +3994,7 @@ function importData(file){
       saveMealPlan();
       saveGoal();
       saveSpend();
+      saveDishes();
       toast('Dados importados com sucesso', 'success');
       renderAll();
     }catch(err){
